@@ -1,5 +1,5 @@
 #!/bin/bash
-# Scaffold a new stick-figure short from the template (The Wallet).
+# Scaffold a new stick-figure film from the template (Three Doors, 16:9).
 # usage: new_film.sh <slug> [remotion-engine-dir]
 #   With an engine dir (a Remotion project with node_modules/remotion): copies the template to <engine>/src/projects/<slug>/.
 #   Without one: creates a standalone Remotion project in ./<slug>-film/ and runs npm install.
@@ -43,11 +43,11 @@ python3 - "$DEST" "$SLUG" "$NAME" <<'PY'
 import sys, pathlib
 d, slug, name = sys.argv[1:]
 for f in pathlib.Path(d).glob("*.ts*"):
-    s = f.read_text().replace("stick-wallet-story", slug).replace("StickWalletStoryRoot", f"{name}Root")
+    s = f.read_text().replace("stick-doors-16x9", slug).replace("StickDoors16x9Root", f"{name}Root")
     f.write_text(s)
 PY
 echo "created $DEST"
 echo "assets (narration.wav, frames) go in: $PUBLIC/projects/$SLUG/   ·   sound library: $PUBLIC/projects/stick-sound-library/"
 [ -f "$PUBLIC/projects/stick-sound-library/sfx_pop.mp3" ] || echo "note: no SFX/music library yet: make it once (references/sound.md), or strip the music/sfx props from <Soundtrack> in Film.tsx"
-echo "next: narration → transcribe/tts → cues.py → $DEST/words.ts, then rewrite $DEST/Film.tsx (shots + SFX)"
-echo "preview: cd \"$ENGINE\" && npx remotion studio src/projects/$SLUG/entry.tsx"
+echo "next: narration → transcribe/tts → cues.py → $DEST/words.ts, then rewrite $DEST/Film.tsx (shots + SFX). Act every idea out: no fact cards or typography (references/visual-grammar.md §1, §6)."
+echo "preview: cd \"$ENGINE\" && npx remotion studio src/projects/$SLUG/entry.tsx   ·   render: scripts/render.sh <engine> $SLUG <out.mp4> --scale=0.75"

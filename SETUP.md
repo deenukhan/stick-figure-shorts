@@ -1,6 +1,6 @@
 # Stick-figure shorts with Claude Code: setup guide
 
-This skill lets Claude Code make 20–40 second stick-figure story videos (9:16) for Reels, Shorts and TikTok. Claude writes the story, ElevenLabs voices it, and Claude draws every frame in code with Remotion. No AI image or video generator is used.
+This skill lets Claude Code make 20–60 second stick-figure story videos (16:9 for YouTube by default, 9:16 on request). Claude writes the story, ElevenLabs voices it, and Claude draws every frame in code with Remotion. No AI image or video generator is used.
 
 ## What you need
 | Tool | Why | Cost |
@@ -26,7 +26,7 @@ macOS: `brew install node ffmpeg python`. Windows: install Node.js, Python and f
 ## Your first video
 Open Claude Code in an empty folder and paste:
 
-> Use the stick-figure-shorts skill. Make a 30-second story: "You find a wallet with $100 in it. Nobody saw you." End on a question. Voice it with ElevenLabs and draw every frame in code.
+> Use the stick-figure-shorts skill. Make a 30-second 16:9 story for YouTube about the Monty Hall problem: "You're on a game show. Three doors." Act the odds out (no fact cards) and end on a question. Voice it with ElevenLabs and draw every frame in code.
 
 Claude will write the story (and check any facts), generate the voice, time the captions to the words, build the scenes, add music and sound effects, show you test frames, then render `out/<name>_v1.mp4`.
 

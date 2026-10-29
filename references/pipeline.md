@@ -43,7 +43,7 @@ python3 scripts/cues.py input/transcript_takeA.json <engine>/src/projects/<slug>
 - `transcribe.py` needs `pip install faster-whisper`. The medium model is accurate for English; `--model small` is faster.
 - `cues.py` glues split numbers ("17" + ",000"), prints `frame end word` for every word, and writes `WORDS`, `CHUNKS` and `VOICE_END`.
 - Compare takes: `ffmpeg -i take.mp3 -af silencedetect=n=-40dB:d=0.25 -f null - 2>&1 | grep silence_duration`. Longer pauses on the key beats = better drama.
-- Film length = `VOICE_END` + ~100–120 frames (title card + fade). Set `FILM_FRAMES` in `Film.tsx`.
+- Film length = `VOICE_END` + ~100–130 frames (a hold on the hero + fade; no title card). Set `FILM_FRAMES` in `Film.tsx`.
 
 ## 5. Build, preview, QA, render
 ```bash

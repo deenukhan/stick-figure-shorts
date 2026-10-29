@@ -4,11 +4,11 @@ import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
 
 // stick-figure-shorts kit: everything a code-drawn stick-figure story short needs, in one file.
 // Copied from the stick-figure-shorts skill (assets/template/kit.tsx). Keep it generic: story-specific
-// drawing goes in Film.tsx. Canvas is 1080x1920 (9:16), 30 fps.
+// drawing goes in Film.tsx. 16:9 variant: the canvas is 2560x1440 world units, rendered at --scale=0.75 to 1920x1080, 30 fps.
 
 export const { fontFamily: CAPTION_FONT } = loadInter("normal", { weights: ["800"], subsets: ["latin"] });
-export const VW = 1080;
-export const VH = 1920;
+export const VW = 2560;
+export const VH = 1440;
 
 // ---------- maths ----------
 export const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
@@ -152,18 +152,16 @@ export const Figure: React.FC<FigureProps> = (p) => {
 // natural blinking: returns 1 (open) most of the time, a 4-frame close every ~3.5 s
 export const blinkAt = (f: number, seed = 0) => { const q = (f + seed * 41) % 104; return q < 4 ? Math.abs(Math.cos((q / 4) * Math.PI)) * 0.9 + 0.1 : 1; };
 
-// ---------- karaoke captions ----------
-// The genre's subtitle: 2–4 heavy white words, the spoken word bright, the rest dim. Over light cards, pass dark.
-export const Captions: React.FC<{ f: number; words: [number, number, string][]; chunks: [number, number][]; y?: number; dark?: boolean; hide?: boolean }> = ({ f, words, chunks, y = 1360, dark, hide }) => {
+// ---------- subtitles ----------
+// Plain subtitles only (Deenu, 2026-10-29): one short line at a time, all words the same colour, no karaoke highlight,
+// no pops or bounces. The film's ideas are carried by the animation; text never decorates.
+export const Captions: React.FC<{ f: number; words: [number, number, string][]; chunks: [number, number][]; y?: number; dark?: boolean; hide?: boolean }> = ({ f, words, chunks, y = 1290, dark, hide }) => {
   if (hide) return null;
   const c = chunks.find(([a, b], k) => f >= words[a][0] - 2 && f < (chunks[k + 1] ? Math.min(words[chunks[k + 1][0]][0] - 2, words[b][1] + 24) : words[b][1] + 24));
   if (!c) return null;
-  const on = dark ? "#16161d" : "#ffffff", off = dark ? "rgba(22,22,29,0.32)" : "rgba(255,255,255,0.42)";
   return (
-    <div style={{ position: "absolute", left: 70, right: 70, top: y, display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "0 18px", fontFamily: CAPTION_FONT, fontWeight: 800, fontSize: 68, lineHeight: 1.15, letterSpacing: "-0.01em", textAlign: "center" }}>
-      {words.slice(c[0], c[1] + 1).map(([s, , t], i) => (
-        <span key={i} style={{ color: f >= s ? on : off, textShadow: dark ? "none" : "0 3px 0 rgba(0,0,0,0.55), 0 0 22px rgba(0,0,0,0.65)", transform: `translateY(${f >= s ? 0 : 4}px)` }}>{t}</span>
-      ))}
+    <div style={{ position: "absolute", left: 360, right: 360, top: y, textAlign: "center", fontFamily: CAPTION_FONT, fontWeight: 800, fontSize: 70, lineHeight: 1.15, color: dark ? "#16161d" : "#ffffff", textShadow: dark ? "none" : "0 2px 0 rgba(0,0,0,0.6), 0 0 18px rgba(0,0,0,0.55)" }}>
+      {words.slice(c[0], c[1] + 1).map(([, , t]) => t).join(" ")}
     </div>
   );
 };

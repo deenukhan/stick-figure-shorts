@@ -2,346 +2,568 @@ import React from "react";
 import { AbsoluteFill, staticFile, useCurrentFrame } from "remotion";
 import { loadVariableFont } from "@remotion/google-fonts/Fraunces";
 import { loadFont as loadMono } from "@remotion/google-fonts/JetBrainsMono";
-import { Captions, CAPTION_FONT, eio, eout, Figure, Glint, Grain, INK, keys, lerp, pop, ramp, ShotDef, Shots, Sfx, Soundtrack, VH, VW, blinkAt, clamp01 } from "./kit";
+import { Captions, CAPTION_FONT, eio, eout, Figure, FigureProps, Glint, Grain, INK, keys, lerp, mix, pop, ramp, rnd, ShotDef, Shots, Sfx, Soundtrack, VH, VW, blinkAt, clamp01 } from "./kit";
 import { CHUNKS, VOICE_END, WORDS } from "./words";
 
-// "The Wallet": a 30 s stick-figure story short (9:16), every frame drawn in code. Sample film for the stick-figure-shorts skill.
-// Narration: ElevenLabs eleven_v4, voice Tyler (xS4rWdm7XjmSzwmzOl3j), take A, muxed at +15 frames. Cue table: projects/stick-wallet-story/BRIEF.md
-// Key frames: "wallet" f38 · "Inside" f98 · "hundred" f132 · "key" f187 · "Nobody" f215 · "cash" f278 · "keep" f301 ·
-// "tested" f356 · "17,000" f418 · "40" f487 · "money" f546 · "More" f580 · "back" f620 · "honest" f680 · "would" f758 · voice ends f782.
-// Fact (true): Cohn et al., Science 2019, 17,303 "lost" wallets in 355 cities, 40 countries; owners were contacted for ~40% of wallets
-// with no cash and ~51% with cash, and the money effect held in 38 of 40 countries.
+// "Three Doors" (16:9): the worked example and template of the stick-figure-shorts skill (2560x1440 world, rendered at 1920x1080).
+// Same narration, cues and mix. Change from the 9:16 cut: the car and goats are introduced as a line-up that shuffles away,
+// so the viewer does not learn early that the car is behind door 2.
+// v2 (2026-10-29, Deenu's rule): no fact cards, chips or title text. From "Most people stay" on, every idea is acted out on the stage:
+// ghost contestants all planting at door 1 (most people stay), a seesaw in your head that sits level (feels like 50-50) then tips (it isn't),
+// three glowing chances where door 3's orb jumps onto door 2 (switching wins 2 of 3), and you holding your one small orb (1 in 3, never changed).
+// The only text besides plain subtitles: the number signs above the doors flip to 1/3 and 2/3 (a prop on the set, timed to the words).
+// Narration: ElevenLabs eleven_v4, voice Jesse – warm audiobook narrator (UlSegI53MOVdpfoA7K1h), one take (29.60 s), muxed at +15 frames.
+// Key frames: "game show" f37/45 · "Three doors" f64/71 · "Behind one" f92 · "car" f143 · "other two" f181 · "goats" f216 ·
+// "pick" f245 · "door number one" f251–278 · "host" f297 · "knows" f317 · "opens" f359 · "three" f373 · "goat" f406 ·
+// "switch?" f473 · "Most" f499 · "stay" f515 · "50-50" f560 · "isn't" f601 · "switch" f637 · "two … three" f665–707 ·
+// "first pick" f730 · "one in three" f766–781 · "never changed" f814–836 · "So" f854 · "would you switch?" f880–898 · voice ends f898.
+// Facts (standard Monty Hall assumptions: the host knows, always opens a goat door you didn't pick, always offers the switch):
+// staying wins 1/3, switching wins 2/3. "Most people stay": Granberg & Brown (1995), most participants stick with their first choice.
 
 const { fontFamily: SERIF } = loadVariableFont("normal", { subsets: ["latin"] });
 const { fontFamily: MONO } = loadMono("normal", { weights: ["500"], subsets: ["latin"] });
-export const FILM_FRAMES = 900;
+export const FILM_FRAMES = VOICE_END + 110; // 1008
 
-// sound design: every effect lands on its picture beat (frames are composition frames)
+// sound design: every effect lands on its picture beat (composition frames). Big hits sit in the pauses.
 const SFX: Sfx[] = [
-  [2, "sfx_footsteps", 0.5], [36, "sfx_sparkle", 0.35], [96, "sfx_whoosh", 0.3], [100, "sfx_card_slide", 0.35],
-  [128, "sfx_card_slide", 0.4], [140, "sfx_pop", 0.35], [185, "sfx_sparkle", 0.4], [210, "sfx_whoosh", 0.25],
-  [232, "sfx_gulp", 0.5], [270, "sfx_pop", 0.35], [298, "sfx_card_slide", 0.3], [326, "sfx_whoosh", 0.3],
-  [352, "sfx_pop", 0.35], [384, "sfx_whoosh", 0.25], [412, "sfx_counter", 0.45], [486, "sfx_pop", 0.35],
-  [522, "sfx_whoosh", 0.25], [528, "sfx_card_slide", 0.3], [604, "sfx_ding", 0.3], [634, "sfx_door_creak", 0.35],
-  [686, "sfx_heart_chime", 0.45], [726, "sfx_whoosh", 0.25], [784, "sfx_reveal_hit", 0.45],
+  [36, "sfx_sparkle", 0.3], [60, "sfx_pop", 0.3], [68, "sfx_pop", 0.3], [76, "sfx_pop", 0.3],
+  [88, "sfx_whoosh", 0.28], [140, "sfx_sparkle", 0.4], [208, "sfx_pop", 0.3], [221, "sfx_goat", 0.3],
+  [235, "sfx_whoosh", 0.28], [250, "sfx_pop", 0.35],
+  [288, "sfx_whoosh", 0.25], [316, "sfx_pop", 0.3], [338, "sfx_drumroll", 0.34],
+  [355, "sfx_whoosh", 0.22], [363, "sfx_door_creak", 0.42], [410, "sfx_goat", 0.45],
+  [425, "sfx_whoosh", 0.25], [484, "sfx_gulp", 0.45],
+  [495, "sfx_whoosh", 0.25], [500, "sfx_pop", 0.2], [505, "sfx_pop", 0.2], [510, "sfx_pop", 0.2], [516, "sfx_card_slide", 0.3], [524, "sfx_footsteps", 0.25],
+  [543, "sfx_whoosh", 0.22], [548, "sfx_pop", 0.3], [562, "sfx_ding", 0.22], [600, "sfx_reveal_hit", 0.45],
+  [619, "sfx_whoosh", 0.22], [624, "sfx_sparkle", 0.3], [652, "sfx_whoosh", 0.2], [670, "sfx_sparkle", 0.38], [684, "sfx_card_slide", 0.25], [705, "sfx_ding", 0.38],
+  [718, "sfx_whoosh", 0.25], [728, "sfx_sparkle", 0.3], [768, "sfx_pop", 0.28], [814, "sfx_gulp", 0.42],
+  [832, "sfx_whoosh", 0.28], [840, "sfx_cha_ching", 0.3],
+  [878, "sfx_whoosh", 0.25], [901, "sfx_reveal_hit", 0.4],
 ];
 
-// palette: night navy, ONE warm light, the hero's mustard coat; fact cards on warm paper
-const NAVY = "#1b2236", BRICK = "#242c44", WARM = "#ffcf73", COAT = "#e8b23a";
-const PAPER = "#F6F1EA", PINK_OFF = "#2A1E17";
-const GROUND = 1500;
-
-// ---------- sets ----------
-const Street: React.FC<{ f: number; blur?: number; lamp?: number }> = ({ f, blur = 0, lamp = 1 }) => {
-  const flick = 0.94 + 0.06 * Math.sin(f * 0.9) * Math.sin(f * 0.23);
-  return (
-    <g filter={blur ? "url(#dof)" : undefined}>
-      <rect width={VW} height={VH} fill={NAVY} />
-      {Array.from({ length: 30 }, (_, r) => <path key={r} d={`M 0,${r * 48} L ${VW},${r * 48}`} stroke={BRICK} strokeWidth={4} />)}
-      {Array.from({ length: 30 }, (_, r) => Array.from({ length: 9 }, (_, c) => <line key={`${r}-${c}`} x1={c * 130 + (r % 2) * 65} y1={r * 48} x2={c * 130 + (r % 2) * 65} y2={r * 48 + 48} stroke={BRICK} strokeWidth={4} />))}
-      {/* closed shop: shutter + dead sign */}
-      <rect x={90} y={760} width={430} height={640} rx={6} fill="#2c3550" stroke={INK} strokeWidth={6} />
-      {Array.from({ length: 15 }, (_, k) => <line key={k} x1={96} y1={800 + k * 40} x2={514} y2={800 + k * 40} stroke="#232b43" strokeWidth={5} />)}
-      <rect x={70} y={690} width={470} height={70} rx={8} fill="#222a40" stroke={INK} strokeWidth={6} />
-      <rect x={210} y={1180} width={190} height={70} rx={10} fill="#3a4462" stroke={INK} strokeWidth={4} />
-      <text x={305} y={1226} textAnchor="middle" fontFamily={MONO} fontSize={30} fill="#8d97b5">CLOSED</text>
-      {/* sidewalk, curb, road */}
-      <rect y={1400} width={VW} height={170} fill="#40475f" />
-      {Array.from({ length: 6 }, (_, k) => <line key={k} x1={k * 220 + 40} y1={1400} x2={k * 220 + 10} y2={1570} stroke="#363c52" strokeWidth={4} />)}
-      <rect y={1566} width={VW} height={26} fill="#5a6180" stroke={INK} strokeWidth={4} />
-      <rect y={1592} width={VW} height={VH - 1592} fill="#161b2b" />
-      {Array.from({ length: 5 }, (_, k) => <rect key={k} x={k * 260 - 40} y={1760} width={150} height={16} rx={8} fill="#2a3045" />)}
-      {/* the one light: a street lamp, cone + reflection on the wet road */}
-      <rect x={884} y={360} width={22} height={1210} fill="#2e3550" stroke={INK} strokeWidth={5} />
-      <path d="M 895,370 Q 895,320 840,322 L 760,322" stroke="#2e3550" strokeWidth={18} fill="none" strokeLinecap="round" />
-      <path d="M 700,322 L 820,322 L 800,350 L 720,350 Z" fill="#39415f" stroke={INK} strokeWidth={5} strokeLinejoin="round" />
-      <g opacity={lamp * flick} style={{ mixBlendMode: "screen" }}>
-        <path d="M 722,350 L 798,350 L 1080,1510 L 380,1510 Z" fill="url(#cone)" />
-        <ellipse cx={720} cy={1490} rx={360} ry={70} fill="url(#pool)" />
-        <rect x={700} y={1600} width={60} height={320} fill="url(#streak)" />
-        <circle cx={760} cy={352} r={70} fill="url(#bulb)" />
-      </g>
-      <rect x={724} y={346} width={72} height={8} rx={4} fill="#fff6dc" opacity={lamp} />
-    </g>
-  );
-};
-
-const Doorway: React.FC<{ f: number }> = ({ f }) => (
-  <g>
-    <rect width={VW} height={VH} fill="#22313d" />
-    {Array.from({ length: 34 }, (_, r) => <path key={r} d={`M 0,${r * 44 + 20} L ${VW},${r * 44 + 20}`} stroke="#283a48" strokeWidth={8} />)}
-    {/* the open door: warm inside */}
-    <rect x={600} y={700} width={340} height={800} fill="#2b2a2f" stroke={INK} strokeWidth={8} />
-    <rect x={616} y={716} width={308} height={784} fill="#ffcf7a" />
-    <rect x={616} y={716} width={308} height={784} fill="url(#inside)" />
-    <path d="M 924,716 L 990,690 L 990,1530 L 924,1500 Z" fill="#7a4b33" stroke={INK} strokeWidth={6} strokeLinejoin="round" />
-    <circle cx={972} cy={1120} r={9} fill={WARM} stroke={INK} strokeWidth={3} />
-    <rect x={566} y={660} width={408} height={44} rx={6} fill="#384c5a" stroke={INK} strokeWidth={6} />
-    <rect x={700} y={600} width={120} height={50} rx={8} fill="#f2e6cf" stroke={INK} strokeWidth={4} />
-    <text x={760} y={638} textAnchor="middle" fontFamily={MONO} fontSize={34} fill={INK}>12</text>
-    <rect y={1500} width={VW} height={VH - 1500} fill="#3b4652" />
-    <path d={`M 616,1500 L 924,1500 L 1080,1760 L 380,1760 Z`} fill="#ffd894" opacity={0.28} style={{ mixBlendMode: "screen" }} />
-    <rect x={560} y={1500} width={420} height={34} rx={8} fill="#5b4a3c" stroke={INK} strokeWidth={5} />
-    {/* plant */}
-    <path d="M 120,1500 L 140,1380 L 260,1380 L 280,1500 Z" fill="#b8704a" stroke={INK} strokeWidth={6} strokeLinejoin="round" />
-    {[-40, 0, 40].map((a, k) => <ellipse key={k} cx={200 + a * 1.4} cy={1300 - Math.abs(a) * 0.4} rx={30} ry={80} transform={`rotate(${a + Math.sin(f * 0.05 + k) * 3} ${200} 1380)`} fill="#4f8a5b" stroke={INK} strokeWidth={5} />)}
-  </g>
-);
+// palette: night-navy game-show stage, ONE strong spotlight, bulb lights; the contestant's coral jacket is the hero colour,
+// the host's deep purple suit the second costume; the car is bright yellow. Fact cards on warm paper.
+const NAVY = "#131a31", WALL_LINE = "#1a2246", FLOOR = "#0d1225", DOOR = "#2c3c6e", FRAME = "#222a4c";
+const BULB_OFF = "#3a4062", BULB = "#ffd36b", SPOT = "#fff0c8";
+const CORAL = "#e5674a", PURPLE = "#5b3f8c", CAR = "#f5c331";
+const PAPER = "#F6F1EA", CINK = "#2A1E17", MUTED = "#7a6a5e";
+const GROUND = 1380, CX = VW / 2;
+const DOOR_X = [940, 1280, 1620], DOOR_W = 290, DOOR_TOP = 480, DOOR_BOT = 1160;
 
 // ---------- props ----------
-const Bill: React.FC<{ x: number; y: number; r?: number }> = ({ x, y, r = 0 }) => (
-  <g transform={`translate(${x} ${y}) rotate(${r})`}>
-    <rect x={-170} y={-78} width={340} height={156} rx={10} fill="#a9cf8f" stroke={INK} strokeWidth={6} />
-    <rect x={-150} y={-60} width={300} height={120} rx={6} fill="none" stroke="#6f9a5d" strokeWidth={4} />
-    <circle cx={0} cy={0} r={40} fill="#c4e0ae" stroke="#6f9a5d" strokeWidth={4} />
-    <text x={-118} y={-22} fontFamily={CAPTION_FONT} fontWeight={800} fontSize={34} fill="#4d7340">100</text>
-    <text x={118} y={48} textAnchor="end" fontFamily={CAPTION_FONT} fontWeight={800} fontSize={34} fill="#4d7340">100</text>
-    <text x={0} y={14} textAnchor="middle" fontFamily={CAPTION_FONT} fontWeight={800} fontSize={40} fill="#4d7340">$</text>
-  </g>
-);
-const Key: React.FC<{ x: number; y: number; r?: number; s?: number }> = ({ x, y, r = 0, s = 1 }) => (
-  <g transform={`translate(${x} ${y}) rotate(${r}) scale(${s})`}>
-    <path d="M 40,-12 L 190,-12 L 190,12 L 170,12 L 170,34 L 150,34 L 150,12 L 130,12 L 130,28 L 112,28 L 112,12 L 40,12 Z" fill="#e2ad46" stroke={INK} strokeWidth={6} strokeLinejoin="round" />
-    <circle cx={0} cy={0} r={52} fill="#e2ad46" stroke={INK} strokeWidth={6} />
-    <circle cx={-6} cy={0} r={18} fill="#2b2b33" stroke={INK} strokeWidth={5} />
-  </g>
-);
-// a small closed wallet (side view, for hands and the ground)
-const MiniWallet: React.FC<{ s?: number }> = ({ s = 1 }) => (
-  <g transform={`scale(${s})`}>
-    <rect x={-46} y={-30} width={92} height={60} rx={10} fill="#8a5a3c" stroke={INK} strokeWidth={5} />
-    <rect x={-38} y={-22} width={76} height={44} rx={7} fill="none" stroke="#c99a6e" strokeWidth={2.5} strokeDasharray="7 6" />
-    <rect x={22} y={-12} width={30} height={22} rx={5} fill="#6f4730" stroke={INK} strokeWidth={4} />
-  </g>
-);
-
-// "found" chip: our own stakes tag, small, top left
-const FoundTag: React.FC<{ f: number; at: number }> = ({ f, at }) => {
-  const k = pop(f, at, 12);
-  if (k <= 0.01) return null;
+const Car: React.FC<{ x: number; y: number; s?: number }> = ({ x, y, s = 1 }) => {
+  const dark = mix(CAR, "#000000", 0.3);
   return (
-    <g transform={`translate(70 150) scale(${k})`} opacity={clamp01(k)}>
-      <rect x={0} y={-44} width={560} height={76} rx={38} fill="#fbfbf8" stroke={INK} strokeWidth={5} />
-      <text x={34} y={6} fontFamily={MONO} fontSize={32} fill={INK} letterSpacing={1}>FOUND · $100 + 1 KEY</text>
+    <g transform={`translate(${x} ${y}) scale(${s})`}>
+      <ellipse cx={0} cy={4} rx={165} ry={13} fill="#000" opacity={0.25} />
+      <path d="M -88,-96 L -60,-150 Q -54,-162 -40,-162 L 48,-162 Q 62,-162 70,-150 L 106,-96 Z" fill={CAR} stroke={INK} strokeWidth={7} strokeLinejoin="round" />
+      <path d="M -68,-100 L -47,-144 L -6,-144 L -6,-100 Z" fill="#cfe8f2" stroke={INK} strokeWidth={5} strokeLinejoin="round" />
+      <path d="M 6,-100 L 6,-144 L 52,-144 L 82,-100 Z" fill="#cfe8f2" stroke={INK} strokeWidth={5} strokeLinejoin="round" />
+      <path d="M -40,-140 l -12,26 M 18,-140 l -10,24" stroke="#ffffff" strokeWidth={6} strokeLinecap="round" opacity={0.8} />
+      <path d="M -152,-38 L -152,-74 Q -150,-98 -122,-100 L 120,-100 Q 152,-98 158,-72 L 160,-38 Q 160,-26 148,-26 L -140,-26 Q -152,-26 -152,-38 Z" fill={CAR} stroke={INK} strokeWidth={7} strokeLinejoin="round" />
+      <path d="M -126,-86 L 128,-86" stroke="#fff6cf" strokeWidth={7} strokeLinecap="round" opacity={0.85} />
+      <path d="M -6,-98 L -6,-42 M 22,-66 l 18,0" stroke={dark} strokeWidth={4} strokeLinecap="round" />
+      <rect x={138} y={-80} width={18} height={15} rx={4} fill="#fff7d6" stroke={INK} strokeWidth={4} />
+      <rect x={-154} y={-80} width={13} height={15} rx={3} fill={dark} stroke={INK} strokeWidth={4} />
+      {[-92, 98].map((wx) => (
+        <g key={wx}>
+          <circle cx={wx} cy={-26} r={35} fill="#1d1d26" stroke={INK} strokeWidth={6} />
+          <circle cx={wx} cy={-26} r={14} fill="#cfd3da" stroke={INK} strokeWidth={4} />
+        </g>
+      ))}
     </g>
   );
 };
 
-// ---------- fact cards ----------
-const Card: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
-  <g>
-    <rect width={VW} height={VH} fill={PAPER} />
-    <Grain id="g1" />
-    <text x={VW / 2} y={300} textAnchor="middle" fontFamily={MONO} fontSize={32} letterSpacing={6} fill="#7a6a5e">{label}</text>
-    {children}
+// a cute goat: white body, grey patch, little horns, beard. Origin between the hooves.
+const Goat: React.FC<{ x: number; y: number; s?: number; facing?: 1 | -1; f: number; bleat?: number; hop?: number }> = ({ x, y, s = 1, facing = 1, f, bleat = 0, hop = 0 }) => {
+  const bob = Math.sin(f * 0.16) * 3;
+  const chew = Math.sin(f * 0.55) * 2;
+  const W = "#f4f2ec";
+  return (
+    <g transform={`translate(${x} ${y}) scale(${s * facing} ${s})`}>
+      <ellipse cx={8} cy={2} rx={112} ry={12} fill="#000" opacity={0.22} />
+      <g transform={`translate(0 ${-hop})`}>
+        {[-64, -36, 40, 66].map((lx, k) => (
+          <g key={k}>
+            <path d={`M ${lx},-84 L ${lx + (k % 2 ? 3 : -3)},-12`} stroke={INK} strokeWidth={9} strokeLinecap="round" />
+            <rect x={lx - 10 + (k % 2 ? 3 : -3)} y={-14} width={20} height={14} rx={4} fill="#3b3540" stroke={INK} strokeWidth={4} />
+          </g>
+        ))}
+        <path d="M -98,-140 q -24,-16 -18,-36 q 12,10 26,24" fill={W} stroke={INK} strokeWidth={5} strokeLinejoin="round" />
+        {/* neck */}
+        <path d="M 40,-150 L 92,-238 L 140,-212 L 96,-128 Z" fill={W} stroke={INK} strokeWidth={7} strokeLinejoin="round" />
+        <ellipse cx={0} cy={-120} rx={104} ry={60} fill={W} stroke={INK} strokeWidth={7} />
+        <ellipse cx={-34} cy={-130} rx={36} ry={22} fill="#d8d3c9" />
+        <path d="M 40,-150 L 96,-128" stroke={W} strokeWidth={10} />
+        {/* head */}
+        <g transform={`translate(118 ${-232 + bob}) rotate(${-4 + chew * 0.6})`}>
+          <path d="M -20,-44 C -30,-82 -66,-90 -80,-72 C -58,-76 -42,-66 -34,-40 Z" fill="#a59e92" stroke={INK} strokeWidth={5} strokeLinejoin="round" />
+          <path d="M -2,-50 C -6,-90 -40,-104 -58,-90 C -36,-88 -22,-74 -16,-46 Z" fill="#b8b1a5" stroke={INK} strokeWidth={5} strokeLinejoin="round" />
+          <ellipse cx={-40} cy={-14} rx={32} ry={11} transform="rotate(-22 -40 -14)" fill="#e6e1d8" stroke={INK} strokeWidth={5} />
+          <path d="M -36,-24 Q -38,-56 -6,-56 Q 32,-54 46,-16 Q 58,16 42,32 Q 22,44 -6,32 Q -38,16 -36,-24 Z" fill={W} stroke={INK} strokeWidth={7} strokeLinejoin="round" />
+          <ellipse cx={34} cy={14} rx={21} ry={16} fill="#e7e1d6" />
+          <circle cx={46} cy={6} r={3.5} fill={INK} />
+          <path d="M 8,36 L 18,74 L 30,38 Z" fill="#dcd6cb" stroke={INK} strokeWidth={4} strokeLinejoin="round" />
+          <ellipse cx={4} cy={-16} rx={6.5} ry={9} fill={INK} />
+          <circle cx={6} cy={-19} r={2.2} fill="#fff" />
+          {bleat > 0.05 ? <ellipse cx={30} cy={30} rx={8} ry={4 + 8 * bleat} fill={INK} /> : <path d="M 20,28 q 10,7 20,-1" stroke={INK} strokeWidth={4.5} fill="none" strokeLinecap="round" />}
+        </g>
+      </g>
+    </g>
+  );
+};
+
+// the host's microphone, drawn at his front hand (holdR)
+const Mic: React.FC<{ r?: number }> = ({ r = 0 }) => (
+  <g transform={`rotate(${r})`}>
+    <rect x={-7} y={-64} width={14} height={60} rx={5} fill="#2a2a33" stroke={INK} strokeWidth={4} />
+    <circle cx={0} cy={-78} r={18} fill="#b9bcc6" stroke={INK} strokeWidth={5} />
+    <path d="M -12,-84 h 24 M -15,-77 h 30 M -12,-70 h 24" stroke="#7f8392" strokeWidth={2.5} />
   </g>
 );
+
+// the host: deep-purple suit, glasses, slick hair, white shirt V + bow tie, mic in hand
+const Host: React.FC<Omit<FigureProps, "coat"> & { micR?: number }> = (p) => {
+  const s = p.s ?? 1, fc = p.facing ?? 1, bob = p.bob ?? 0;
+  const shY = -282 - bob, headY = -352 - bob;
+  return (
+    <g>
+      <Figure {...p} coat={PURPLE} glasses hair="none" holdR={<Mic r={p.micR ?? 0} />} />
+      <g transform={`translate(${p.x} ${p.y}) scale(${s * fc} ${s})`}>
+        <path d={`M -18,${shY - 8} L 0,${shY + 30} L 18,${shY - 8} Z`} fill="#fbfbf8" stroke={INK} strokeWidth={4} strokeLinejoin="round" />
+        <path d={`M 0,${shY + 6} L -20,${shY - 5} L -20,${shY + 17} Z M 0,${shY + 6} L 20,${shY - 5} L 20,${shY + 17} Z`} fill={INK} stroke={INK} strokeWidth={3} strokeLinejoin="round" />
+        <g transform={`rotate(${p.headTilt ?? 0} 0 ${headY + 50})`}>
+          <path d={`M -61,${headY - 8} Q -62,${headY - 68} 0,${headY - 68} Q 62,${headY - 68} 62,${headY - 12} Q 34,${headY - 50} -8,${headY - 48} Q -42,${headY - 44} -61,${headY - 8} Z`} fill="#2f2a36" stroke={INK} strokeWidth={6} strokeLinejoin="round" />
+          <path d={`M -6,${headY - 50} Q 4,${headY - 60} 14,${headY - 66}`} stroke="#5a5266" strokeWidth={4} fill="none" strokeLinecap="round" />
+        </g>
+      </g>
+    </g>
+  );
+};
+
+const You: React.FC<Omit<FigureProps, "coat">> = (p) => <Figure {...p} coat={CORAL} />;
+
+// confetti: small SVG rectangles bursting up from a point and falling back
+const Confetti: React.FC<{ t: number; x: number; y: number; n?: number; seed?: string }> = ({ t, x, y, n = 70, seed = "c" }) => {
+  if (t <= 0) return null;
+  const cols = [CORAL, CAR, "#fbfbf8", "#a48bd6"];
+  return (
+    <g>
+      {Array.from({ length: n }, (_, i) => {
+        const vx = (rnd(`${seed}x${i}`) - 0.5) * 44;
+        const vy = -16 - rnd(`${seed}y${i}`) * 24;
+        const px = x + vx * t, py = y + vy * t + 0.6 * t * t;
+        const rot = rnd(`${seed}r${i}`) * 360 + t * (rnd(`${seed}s${i}`) - 0.5) * 30;
+        const w = 16 + rnd(`${seed}w${i}`) * 12, h = 9 + rnd(`${seed}h${i}`) * 6;
+        const flip = Math.abs(Math.cos(t * 0.25 + i));
+        return <rect key={i} x={-w / 2} y={(-h / 2) * flip} width={w} height={Math.max(2, h * flip)} rx={2} fill={cols[i % 4]} stroke={INK} strokeWidth={2} transform={`translate(${px} ${py}) rotate(${rot})`} />;
+      })}
+    </g>
+  );
+};
+// slow falling confetti for the last shot
+const ConfettiRain: React.FC<{ f: number; n?: number }> = ({ f, n = 34 }) => {
+  const cols = [CORAL, CAR, "#fbfbf8", "#a48bd6"];
+  return (
+    <g>
+      {Array.from({ length: n }, (_, i) => {
+        const x0 = rnd(`rx${i}`) * VW, sp = 5 + rnd(`rs${i}`) * 5;
+        const py = ((rnd(`ry${i}`) * 1700 + f * sp) % 1700) - 150;
+        const px = x0 + Math.sin(f * 0.05 + i) * 30;
+        const flip = Math.abs(Math.cos(f * 0.12 + i));
+        return <rect key={i} x={-11} y={-6 * flip} width={22} height={Math.max(2, 12 * flip)} rx={2} fill={cols[i % 4]} stroke={INK} strokeWidth={2.5} transform={`translate(${px} ${py}) rotate(${rnd(`rr${i}`) * 360 + f * 2})`} />;
+      })}
+    </g>
+  );
+};
+
+// thought-bubble cloud (centre ~ 0,50 at scale 1)
+const CLOUD = "M -170,40 a 80,80 0 0 1 90,-110 a 90,90 0 0 1 160,-10 a 80,80 0 0 1 90,110 a 70,70 0 0 1 -40,120 a 90,90 0 0 1 -150,30 a 90,90 0 0 1 -140,-30 a 70,70 0 0 1 -10,-110 z";
+
+// ---------- the set: a game-show stage at night ----------
+type DoorState = { open?: number; lit?: number; glow?: number; xray?: number; content?: "car" | "goat"; pop?: number; bleat?: number; hop?: number; sign?: string; signK?: number; dim?: number };
+const Door: React.FC<{ f: number; i: number; st: DoorState }> = ({ f, i, st }) => {
+  const cx = DOOR_X[i], x0 = cx - DOOR_W / 2, x1 = cx + DOOR_W / 2, H = DOOR_BOT - DOOR_TOP;
+  const open = st.open ?? 0, lit = st.lit ?? 0, glow = st.glow ?? 0, xray = st.xray ?? 0;
+  const fx0 = x0 - 22, fx1 = x1 + 22, fy0 = DOOR_TOP - 22;
+  const bulbs: [number, number][] = [];
+  for (let k = 0; k < 15; k++) bulbs.push([fx0, DOOR_BOT - 24 - k * 46]);
+  for (let k = 1; k < 8; k++) bulbs.push([lerp(fx0, fx1, k / 8), fy0]);
+  for (let k = 14; k >= 0; k--) bulbs.push([fx1, DOOR_BOT - 24 - k * 46]);
+  // the panel swings towards us about its right-hand hinge
+  const th = open * (Math.PI / 2) * 1.05;
+  const farX = x1 - DOOR_W * Math.cos(th) + 84 * Math.sin(th);
+  const ex = 40 * Math.sin(th);
+  const kx = (x1 - farX) / DOOR_W;
+  const seen = Math.max(open, xray);
+  const popK = st.pop ?? 1;
+  const panelFill = mix(DOOR, "#121731", Math.sin(th) * 0.7);
+  return (
+    <g>
+      {glow > 0.01 && <rect x={fx0 - 20} y={fy0 - 20} width={fx1 - fx0 + 40} height={DOOR_BOT - fy0 + 20} rx={20} fill={BULB} opacity={glow * 0.75} filter="url(#glow)" style={{ mixBlendMode: "screen" }} />}
+      <rect x={fx0} y={fy0} width={fx1 - fx0} height={DOOR_BOT - fy0} rx={12} fill={FRAME} stroke={INK} strokeWidth={7} />
+      {bulbs.map(([bx, by], k) => {
+        const b = lit * (0.68 + 0.32 * ((k + Math.floor(f / 6)) % 2));
+        return (
+          <g key={k}>
+            {b > 0.05 && <circle cx={bx} cy={by} r={19} fill={BULB} opacity={0.32 * b} style={{ mixBlendMode: "screen" }} />}
+            <circle cx={bx} cy={by} r={8} fill={mix(BULB_OFF, BULB, b)} stroke={INK} strokeWidth={3} />
+          </g>
+        );
+      })}
+      {/* inside: a lit booth */}
+      <rect x={x0} y={DOOR_TOP} width={DOOR_W} height={H} fill="url(#room)" stroke={INK} strokeWidth={5} />
+      <rect x={x0} y={DOOR_BOT - 70} width={DOOR_W} height={70} fill="#b98445" opacity={0.55} />
+      {seen > 0.01 && st.content === "car" && popK > 0.01 && <Car x={cx} y={DOOR_BOT - 16} s={0.86 * popK} />}
+      {seen > 0.01 && st.content === "goat" && popK > 0.01 && <Goat x={cx - 22} y={DOOR_BOT - 14} s={0.9 * popK} f={f} bleat={st.bleat} hop={st.hop} />}
+      {/* the door panel */}
+      {open < 0.999 && (
+        <g opacity={1 - 0.8 * xray}>
+          <path d={`M ${farX},${DOOR_TOP - ex} L ${x1},${DOOR_TOP} L ${x1},${DOOR_BOT} L ${farX},${DOOR_BOT + ex} Z`} fill={panelFill} stroke={INK} strokeWidth={7} strokeLinejoin="round" />
+          {kx > 0.05 && (
+            <g transform={`translate(${x1} 0) scale(${kx} 1) translate(${-x1} 0)`} opacity={1 - ramp(open, 0.15, 0.5)}>
+              <rect x={x0 + 30} y={DOOR_TOP + 40} width={DOOR_W - 60} height={340} rx={14} fill="none" stroke="#22305c" strokeWidth={7} />
+              <rect x={x0 + 30} y={DOOR_TOP + 420} width={DOOR_W - 60} height={220} rx={14} fill="none" stroke="#22305c" strokeWidth={7} />
+              <text x={cx} y={DOOR_TOP + 272} textAnchor="middle" style={serif} fontSize={190} fill="#efe4cc">{i + 1}</text>
+              <circle cx={x0 + 34} cy={DOOR_TOP + H * 0.58} r={13} fill="#d8b25a" stroke={INK} strokeWidth={4} />
+            </g>
+          )}
+        </g>
+      )}
+      {xray > 0.01 && open < 0.5 && <rect x={x0 + 6} y={DOOR_TOP + 6} width={DOOR_W - 12} height={H - 12} rx={8} fill="none" stroke="#fbfbf8" strokeWidth={5} strokeDasharray="18 14" opacity={xray * 0.8} />}
+      {/* number sign above the door */}
+      {/* the number sign above the door; it can flip (like a split-flap) to show this door's odds */}
+      {(() => {
+        const k = st.signK ?? 0, flipped = k > 0.5 && st.sign, sy = Math.max(0.04, Math.abs(Math.cos(Math.PI * k)));
+        const w = lerp(132, 176, eio(k));
+        return (
+          <g transform={`translate(${cx} ${DOOR_TOP - 102}) scale(1 ${sy}) translate(${-cx} ${-(DOOR_TOP - 102)})`}>
+            <rect x={cx - w / 2} y={DOOR_TOP - 150} width={w} height={96} rx={16} fill="#1c2346" stroke={INK} strokeWidth={6} />
+            <text x={cx} y={DOOR_TOP - (flipped ? 82 : 76)} textAnchor="middle" style={serif} fontSize={flipped ? 62 : 78} fill={mix(mix("#59618a", BULB, lit), "#3a4062", st.dim ?? 0)}>{flipped ? st.sign : i + 1}</text>
+          </g>
+        );
+      })()}
+    </g>
+  );
+};
+
+const VALANCE = (() => {
+  let d = `M 0,0 L ${VW},0 L ${VW},130`;
+  for (let k = 19; k >= 0; k--) d += ` Q ${k * 128 + 64},210 ${k * 128},130`;
+  return d + " Z";
+})();
+
+const Stage: React.FC<{ f: number; doors: DoorState[]; spotX?: number; spot?: number; blur?: number; extra?: React.ReactNode }> = ({ f, doors, spotX = CX, spot = 1, blur = 0, extra }) => {
+  const D = <g>{doors.map((st, i) => <Door key={i} f={f} i={i} st={st} />)}</g>;
+  return (
+    <g filter={blur ? (blur > 10 ? "url(#dof2)" : "url(#dof)") : undefined}>
+      <rect width={VW} height={VH} fill={NAVY} />
+      {Array.from({ length: 27 }, (_, k) => <line key={k} x1={k * 96 + 12} y1={0} x2={k * 96 + 12} y2={DOOR_BOT} stroke={WALL_LINE} strokeWidth={6} />)}
+      {/* a dim arch of bulbs on the back wall */}
+      {Array.from({ length: 33 }, (_, k) => {
+        const a = Math.PI * (k / 32);
+        return <circle key={k} cx={CX - Math.cos(a) * 760} cy={400 - Math.sin(a) * 160} r={7} fill={mix(BULB_OFF, BULB, 0.3 + 0.3 * ((k + Math.floor(f / 8)) % 2))} opacity={0.75} />;
+      })}
+      <path d={VALANCE} fill="#1b2142" stroke={INK} strokeWidth={6} />
+      {D}
+      {/* glossy floor with reflections */}
+      <rect y={DOOR_BOT} width={VW} height={VH - DOOR_BOT} fill={FLOOR} />
+      <g clipPath="url(#floorClip)"><g transform={`translate(0 ${2 * DOOR_BOT}) scale(1 -1)`} opacity={0.22}>{D}</g></g>
+      <rect y={DOOR_BOT} width={VW} height={VH - DOOR_BOT} fill="url(#floorFade)" />
+      {[1230, 1310, 1400].map((y, k) => <line key={k} x1={0} y1={y} x2={VW} y2={y} stroke="#161d38" strokeWidth={4} />)}
+      <line x1={0} y1={DOOR_BOT} x2={VW} y2={DOOR_BOT} stroke={INK} strokeWidth={8} />
+      {extra}
+      {/* the one strong light: a spotlight from above */}
+      <g opacity={spot} style={{ mixBlendMode: "screen" }}>
+        <path d={`M ${spotX - 50},0 L ${spotX + 50},0 L ${spotX + 460},${VH} L ${spotX - 460},${VH} Z`} fill="url(#spotCone)" />
+        <ellipse cx={spotX} cy={GROUND - 30} rx={540} ry={74} fill="url(#spotPool)" />
+      </g>
+    </g>
+  );
+};
+
+// a close-up background: the stage scaled up about a point and blurred
+const StageBG: React.FC<{ f: number; doors: DoorState[]; k: number; cx: number; cy: number; spotX?: number; blur?: number; extra?: React.ReactNode }> = ({ f, doors, k, cx, cy, spotX, blur = 9, extra }) => (
+  <g transform={`translate(${VW / 2} ${VH / 2}) scale(${k}) translate(${-cx} ${-cy})`}><Stage f={f} doors={doors} spotX={spotX} blur={blur} extra={extra} /></g>
+);
+
 const serif = { fontFamily: SERIF, fontWeight: 800, fontVariationSettings: "'SOFT' 100, 'opsz' 144" } as const;
 
-const fmt = (n: number) => Math.round(n).toLocaleString("en-US");
+// ---------- v2 storytelling props (no cards: the stage acts the maths out) ----------
+// a "chance": a small glowing orb, like one of the stage bulbs come loose
+const Orb: React.FC<{ x: number; y: number; r?: number; k?: number }> = ({ x, y, r = 30, k = 1 }) => k <= 0.01 ? null : (
+  <g transform={`translate(${x} ${y}) scale(${k})`}>
+    <circle r={r * 3.2} fill="url(#orbGlow)" style={{ mixBlendMode: "screen" }} />
+    <circle r={r} fill={BULB} stroke={INK} strokeWidth={5} />
+    <circle cx={-r * 0.32} cy={-r * 0.34} r={r * 0.28} fill="#fff8de" />
+  </g>
+);
+// past contestants as faint ghosts (most of them plant themselves at door 1)
+const GHOST_COATS = ["#6f8fb5", "#8a7a5c", "#5d8c74", "#9a6b8a", "#7c7c88", "#a58a5a"];
+const Ghost: React.FC<{ x: number; y: number; s: number; coat: string; cross: number; k: number; walk?: number; look?: [number, number]; f: number; seed: number }> = ({ x, y, s, coat, cross, k, walk, look, f, seed }) => k <= 0.01 ? null : (
+  <g opacity={0.5 * clamp01(k)}>
+    <Figure x={x} y={y + (1 - clamp01(k)) * 30} s={s} coat={coat} hair="none" mood={cross > 0.5 ? "sly" : "neutral"} look={look ?? [8, -4]} blink={blinkAt(f, seed)} walk={walk}
+      armL={lerp(-10, 62, cross)} elbowL={lerp(0, 104, cross)} armR={lerp(10, 66, cross)} elbowR={lerp(0, 100, cross)} />
+  </g>
+);
+// the seesaw in your head: door 1 on the left, door 2 on the right; a = tilt in degrees (positive = door 2 side down)
+const MiniDoor: React.FC<{ x: number; n: number }> = ({ x, n }) => (
+  <g transform={`translate(${x} 0)`}>
+    <rect x={-46} y={-130} width={92} height={130} rx={8} fill={DOOR} stroke={INK} strokeWidth={6} />
+    <text x={0} y={-48} textAnchor="middle" style={serif} fontSize={64} fill="#efe4cc">{n}</text>
+  </g>
+);
+const Seesaw: React.FC<{ a: number }> = ({ a }) => (
+  <g>
+    <path d="M -34,96 L 34,96 L 0,40 Z" fill="#c9bfae" stroke={INK} strokeWidth={6} strokeLinejoin="round" />
+    <g transform={`translate(0 40) rotate(${a})`}>
+      <rect x={-200} y={-10} width={400} height={20} rx={8} fill="#b98445" stroke={INK} strokeWidth={6} />
+      <MiniDoor x={-140} n={1} />
+      <MiniDoor x={140} n={2} />
+    </g>
+  </g>
+);
 
-// ---------- the shots ----------
+// door states
+const C3: ["goat", "car", "goat"] = ["goat", "car", "goat"];
+const doorsWith = (s: DoorState[]) => s.map((d, i) => ({ content: C3[i], ...d }));
+
+
+// ---------- the shots (16:9: the doors hold the centre, you on the left, the host on the right) ----------
 const SHOTS: ShotDef[] = [
-  // A · wide street: you walk in, the wallet glints
-  { from: 0, to: 98, z0: 1.0, z1: 1.12, fx: 520, fy: 1300, render: (f) => {
-    const x = keys(f, [[0, -160], [46, 330], [98, 334]]);
-    const walking = f < 44;
+  // A · wide stage: you're on a game show. Three doors light up one by one
+  { from: 0, to: 90, z0: 1.0, z1: 1.06, fx: CX, fy: 860, render: (f) => {
+    const lit = (i: number) => eout(ramp(f, 60 + i * 8, 66 + i * 8));
+    const doors = doorsWith([0, 1, 2].map((i) => ({ lit: lit(i), glow: lit(i) * (1 - ramp(f, 66 + i * 8, 86 + i * 8)) * 0.8 })));
     return (
       <g>
-        <Street f={f} />
-        <g transform="translate(610 1462)"><MiniWallet s={1.5} /></g>
-        <Glint x={660} y={1434} t={ramp(f, 34, 60)} r={56} />
-        <Figure x={x} y={GROUND + 10} s={1.5} coat={COAT} walk={walking ? f * 0.3 : 0} mood={f > 50 ? "surprised" : "neutral"} look={f > 46 ? [10, 10] : [6, 0]} blink={blinkAt(f, 1)} />
+        <Stage f={f} doors={doors} spot={keys(f, [[0, 0.25], [14, 0.25], [26, 1]])} />
+        <You x={470} y={GROUND} s={1.3} mood={f < 16 ? "neutral" : f < 38 ? "surprised" : "happy"} look={f > 60 ? [6, -12] : [8, -2]} blink={blinkAt(f, 1)} armR={keys(f, [[0, 10], [36, 10], [46, 40]])} elbowR={keys(f, [[0, 0], [36, 0], [46, 60]])} />
+        <Host x={2090} y={GROUND} s={1.3} facing={-1} mood="happy" look={[6, -2]} blink={blinkAt(f, 2)} armL={keys(f, [[0, -10], [56, -10], [66, 130]])} elbowL={keys(f, [[0, 0], [56, 0], [66, -20]])} armR={55} elbowR={85} micR={-12} />
       </g>
     );
   } },
-  // B · insert: the wallet opens. $100 … and a key
-  { from: 98, to: 212, z0: 1.0, z1: 1.08, fx: 540, fy: 900, render: (f, p) => {
-    const F = f + 98;
-    const open = eout(ramp(F, 100, 120));
-    const bill = eout(ramp(F, 129, 150));
-    const key = eout(ramp(F, 179, 194));
+  // B · the prizes: a car and two goats line up in front of the closed doors, then shuffle away behind them
+  // (no x-ray, so the viewer never learns which door hides the car)
+  { from: 90, to: 237, z0: 1.1, z1: 1.17, fx: CX, fy: 1250, render: (f) => {
+    const F = f + 90;
+    const out = eio(ramp(F, 226, 236)), sh = eio(ramp(F, 220, 234)), arc = Math.sin(sh * Math.PI) * 70;
+    const kC = pop(F, 136, 12) * (1 - out), kL = pop(F, 207, 10) * (1 - out), kR = pop(F, 212, 10) * (1 - out);
+    const doors = doorsWith([{ lit: 1 }, { lit: 1 }, { lit: 1 }]);
     return (
       <g>
-        <rect width={VW} height={VH} fill="#3b4158" />
-        {Array.from({ length: 9 }, (_, k) => <line key={k} x1={k * 140 - 60} y1={0} x2={k * 140 + 120} y2={VH} stroke="#343a50" strokeWidth={6} />)}
-        <ellipse cx={540} cy={1000} rx={600} ry={520} fill="url(#pool2)" style={{ mixBlendMode: "screen" }} />
-        {/* open wallet, top-down */}
-        <g transform="translate(540 1010)">
-          <rect x={-380} y={-230} width={760} height={460} rx={34} fill="#6f4730" stroke={INK} strokeWidth={8} />
-          <g transform={`scale(${lerp(0.5, 1, open)} 1)`}>
-            <rect x={-360} y={-210} width={720} height={420} rx={26} fill="#8a5a3c" stroke={INK} strokeWidth={7} />
-            <line x1={0} y1={-210} x2={0} y2={210} stroke="#5d3b28" strokeWidth={6} />
-            <rect x={-330} y={-180} width={300} height={360} rx={18} fill="none" stroke="#c99a6e" strokeWidth={4} strokeDasharray="12 10" />
-            <rect x={30} y={-180} width={300} height={360} rx={18} fill="none" stroke="#c99a6e" strokeWidth={4} strokeDasharray="12 10" />
-            {[-60, 20, 100].map((y, k) => <path key={k} d={`M 50,${y} Q 180,${y + 26} 310,${y}`} stroke="#5d3b28" strokeWidth={6} fill="none" />)}
-            <rect x={70} y={-150} width={220} height={70} rx={10} fill="#d8d2c4" stroke={INK} strokeWidth={5} />
-            <rect x={90} y={-132} width={60} height={34} rx={5} fill="#e2ad46" stroke={INK} strokeWidth={3} />
+        <Stage f={F} doors={doors} spot={1} />
+        {kL > 0.01 && <Goat x={lerp(820, 1740, sh)} y={1250 - arc} s={1.1 * kL} f={F} />}
+        {kR > 0.01 && <Goat x={lerp(1740, 1280, sh)} y={1250 - arc} s={1.1 * kR} facing={-1} f={F} bleat={Math.sin(ramp(F, 214, 228) * Math.PI)} />}
+        {kC > 0.01 && <Car x={lerp(1280, 820, sh)} y={1250 - arc} s={1.35 * kC} />}
+        <Glint x={1360} y={1090} t={ramp(F, 142, 164)} r={70} />
+        <Glint x={1170} y={1180} t={ramp(F, 150, 170)} r={40} />
+      </g>
+    );
+  } },
+  // C · medium: you pick door number one (it glows)
+  { from: 237, to: 290, z0: 1.0, z1: 1.05, fx: CX, fy: 720, render: (f) => {
+    const F = f + 237;
+    const g = eout(ramp(F, 249, 258));
+    const doors = doorsWith([{ lit: 1, glow: g * (0.75 + 0.25 * Math.sin(F * 0.4)) }, { lit: 0.35 }, { lit: 0.35 }]);
+    return (
+      <g>
+        <StageBG f={F} doors={doors} k={1.5} cx={1080} cy={800} spotX={940} blur={0} />
+        <You x={2050} y={1640} s={2.8} facing={-1} mood="happy" look={[10, -6]} blink={blinkAt(F, 3)} armR={keys(F, [[237, 10], [243, 10], [252, 104]])} elbowR={-6} />
+      </g>
+    );
+  } },
+  // D1 · medium: the host, who knows where the car is
+  { from: 290, to: 357, z0: 1.0, z1: 1.06, fx: 1500, fy: 700, render: (f) => {
+    const F = f + 290;
+    const b = pop(F, 316, 12);
+    const doors = doorsWith([{ lit: 0.6, glow: 0.3 }, { lit: 0.6 }, { lit: 0.6 }]);
+    return (
+      <g>
+        <StageBG f={F} doors={doors} k={1.6} cx={1450} cy={780} spotX={1620} blur={9} />
+        <Host x={1840} y={1640} s={2.8} facing={-1} mood={F > 315 ? "sly" : "happy"} look={F > 315 ? [-12, -10] : [-4, 0]} blink={blinkAt(F, 4)} armR={keys(F, [[290, 40], [300, 62]])} elbowR={85} micR={-14} armL={-8} />
+        {b > 0.01 && (
+          <g opacity={clamp01(b)} transform={`translate(1160 400) scale(${1.15 * b})`}>
+            <circle cx={150} cy={330} r={18} fill="#fbfbf8" stroke={INK} strokeWidth={6} />
+            <circle cx={110} cy={262} r={28} fill="#fbfbf8" stroke={INK} strokeWidth={6} />
+            <path d={CLOUD} fill="#fbfbf8" stroke={INK} strokeWidth={7} strokeLinejoin="round" transform="scale(0.95)" />
+            <Car x={0} y={110} s={0.62} />
+            <Glint x={50} y={20} t={ramp(F, 334, 352)} r={34} />
           </g>
-          {bill > 0.01 && <Bill x={lerp(-40, -150, bill)} y={lerp(40, -310, bill)} r={lerp(0, -8, bill)} />}
-          {key > 0.01 && <Key x={lerp(80, 170, key)} y={lerp(40, -330, key)} r={lerp(0, -24, key)} s={1.1} />}
-          <Glint x={lerp(80, 170, key)} y={lerp(40, -330, key)} t={ramp(F, 187, 205)} r={60} />
-        </g>
-        {/* mittens holding the wallet */}
-        {[-1, 1].map((sd) => <g key={sd}><path d={`M ${540 + sd * 700},1980 L ${540 + sd * 395},1120`} stroke={INK} strokeWidth={22} strokeLinecap="round" /><circle cx={540 + sd * 385} cy={1110} r={46} fill="#fbfbf8" stroke={INK} strokeWidth={9} /></g>)}
-        <g opacity={eio(ramp(F, 140, 152))}>
-          <rect x={300} y={360} width={480} height={110} rx={55} fill="#fbfbf8" stroke={INK} strokeWidth={6} />
-          <text x={540} y={436} textAnchor="middle" fontFamily={CAPTION_FONT} fontWeight={800} fontSize={64} fill={INK}>$100</text>
-        </g>
-        <g data-p={p} />
+        )}
       </g>
     );
   } },
-  // C · medium: you check the street. Nobody saw you
-  { from: 212, to: 254, z0: 1.0, z1: 1.05, fx: 540, fy: 800, render: (f) => {
-    const F = f + 212;
-    const lx = keys(F, [[212, 0], [217, -16], [226, -16], [231, 16], [242, 16], [248, 0]]);
+  // D2 · wide: he opens door three… a goat
+  { from: 357, to: 427, z0: 1.0, z1: 1.07, fx: 1560, fy: 900, render: (f) => {
+    const F = f + 357;
+    const o = eio(ramp(F, 362, 384));
+    const bl = Math.sin(ramp(F, 408, 424) * Math.PI);
+    const doors = doorsWith([{ lit: 0.55, glow: 0.3 }, { lit: 0.55 }, { lit: 1, open: o, bleat: bl, hop: 16 * Math.sin(ramp(F, 403, 413) * Math.PI) }]);
     return (
       <g>
-        <g transform="translate(540 960) scale(1.5) translate(-540 -960)"><Street f={F} blur={9} /></g>
-        <Figure x={540} y={1680} s={2.6} coat={COAT} mood="worried" look={[lx, 0]} sweat={eio(ramp(F, 230, 240))} blink={blinkAt(F, 2)} armR={34} elbowR={60} holdR={<MiniWallet s={1} />} />
-        <FoundTag f={F} at={212} />
+        <Stage f={F} doors={doors} spotX={1620} />
+        <You x={470} y={GROUND} s={1.3} mood={F > 403 ? "surprised" : "worried"} look={[12, -4]} blink={blinkAt(F, 5)} />
+        <Host x={2090} y={GROUND} s={1.3} facing={-1} mood="happy" look={[12, -2]} blink={blinkAt(F, 6)} armL={keys(F, [[357, -10], [360, -10], [370, 88]])} elbowL={-8} armR={55} elbowR={85} micR={8} />
       </g>
     );
   } },
-  // D · close-up: the thought. You'd think the cash makes people keep it
-  { from: 254, to: 328, z0: 1.0, z1: 1.09, fx: 540, fy: 820, render: (f) => {
-    const F = f + 254;
-    const bub = pop(F, 272, 12);
+  // E · close-up two-shot: the host leans in with the mic. Do you want to switch?
+  { from: 427, to: 497, z0: 1.0, z1: 1.06, fx: CX, fy: 760, render: (f) => {
+    const F = f + 427;
+    const lean = eio(ramp(F, 430, 450));
+    const doors = doorsWith([{ lit: 0.7, glow: 0.3 }, { lit: 0.7 }, { lit: 0.7, open: 1 }]);
     return (
       <g>
-        <g transform="translate(540 960) scale(1.9) translate(-540 -960)"><Street f={F} blur={14} /></g>
-        <Figure x={430} y={2290} s={4.2} coat={COAT} mood={F > 296 ? "sly" : "neutral"} look={F > 296 ? [16, -4] : [10, -10]} blink={blinkAt(F, 3)} />
-        {/* thought bubble with a pile of cash */}
-        <g opacity={clamp01(bub)} transform={`translate(800 420) scale(${bub})`}>
-          <circle cx={-200} cy={330} r={18} fill="#fbfbf8" stroke={INK} strokeWidth={6} />
-          <circle cx={-150} cy={260} r={28} fill="#fbfbf8" stroke={INK} strokeWidth={6} />
-          <path d="M -170,40 a 80,80 0 0 1 90,-110 a 90,90 0 0 1 160,-10 a 80,80 0 0 1 90,110 a 70,70 0 0 1 -40,120 a 90,90 0 0 1 -150,30 a 90,90 0 0 1 -140,-30 a 70,70 0 0 1 -10,-110 z" fill="#fbfbf8" stroke={INK} strokeWidth={7} strokeLinejoin="round" />
-          <g transform="translate(0 30) scale(0.42)">
-            {[0, 1, 2, 3].map((k) => <Bill key={k} x={(k % 2) * 30 - 15} y={-k * 46 + 60} r={(k % 2 ? 4 : -4) + Math.sin(F * 0.2 + k) * 1.5} />)}
+        <StageBG f={F} doors={doors} k={1.8} cx={CX} cy={760} spotX={CX} blur={14} />
+        <You x={820} y={1830} s={3.2} mood={F > 471 ? "worried" : "neutral"} look={F > 478 ? [4, 2] : [12, -2]} sweat={eio(ramp(F, 474, 486))} blink={blinkAt(F, 7)} />
+        <Host x={lerp(1820, 1730, lean)} y={1830} s={3.2} facing={-1} mood={F > 470 ? "happy" : "sly"} look={[12, 0]} headTilt={lerp(0, 8, lean)} blink={blinkAt(F, 8)} armR={lerp(40, 78, lean)} elbowR={lerp(80, 14, lean)} micR={lerp(-10, -40, lean)} />
+      </g>
+    );
+  } },
+  // F1 · wide: most people stay. Faint past contestants pop up and plant themselves at door 1, arms crossed; only one walks to door 2
+  { from: 497, to: 545, z0: 1.0, z1: 1.05, fx: 1000, fy: 900, render: (f) => {
+    const F = f + 497;
+    const cross = eio(ramp(F, 512, 520));
+    const doors = doorsWith([{ lit: 0.85, glow: 0.35 }, { lit: 0.6 }, { lit: 0.5, open: 1 }]);
+    const G: [number, number][] = [[640, 499], [790, 502], [930, 505], [1070, 508], [540, 511], [1190, 514]];
+    return (
+      <g>
+        <Stage f={F} doors={doors} spotX={940} />
+        {G.map(([gx, at], i) => {
+          const leaver = i === 5, wk = leaver ? ramp(F, 522, 542) : 0;
+          return <Ghost key={i} x={leaver ? lerp(gx, 1330, eio(wk)) : gx} y={GROUND - 70} s={1.08} coat={GHOST_COATS[i]} cross={leaver ? 0 : cross} k={pop(F, at, 10)} walk={leaver && wk > 0 && wk < 1 ? F * 0.35 : undefined} look={leaver ? [10, -2] : [i % 2 ? 6 : -6, -4]} f={F} seed={i + 20} />;
+        })}
+        <You x={470} y={GROUND} s={1.3} mood="worried" look={F < 525 ? [10, -6] : [14, -8]} blink={blinkAt(F, 12)} />
+        <Host x={2090} y={GROUND} s={1.3} facing={-1} mood="sly" look={[10, -2]} blink={blinkAt(F, 13)} armR={55} elbowR={85} micR={-12} />
+      </g>
+    );
+  } },
+  // F2 · close-up: it feels like 50-50 (a level seesaw in your head)… it isn't (it tips hard towards door 2)
+  { from: 545, to: 621, z0: 1.0, z1: 1.06, fx: 1100, fy: 700, render: (f) => {
+    const F = f + 545;
+    const b = pop(F, 547, 12);
+    const wob = Math.sin(F * 0.22) * 5 * Math.exp(-(F - 547) / 22);
+    const tip = eout(ramp(F, 600, 610));
+    const a = lerp(wob, 26, tip) + (tip > 0 ? Math.sin((F - 600) * 0.9) * 3 * (1 - ramp(F, 600, 620)) : 0);
+    const doors = doorsWith([{ lit: 0.7, glow: 0.3 }, { lit: 0.7 }, { lit: 0.7, open: 1 }]);
+    return (
+      <g>
+        <StageBG f={F} doors={doors} k={1.8} cx={CX} cy={760} spotX={CX} blur={14} />
+        <You x={820} y={1830} s={3.2} mood={F > 602 ? "surprised" : "worried"} look={F > 602 ? [14, -12] : [12, -8]} headTilt={F > 602 ? 0 : -3 + Math.sin(F * 0.22) * 3} blink={blinkAt(F, 14)} />
+        {b > 0.01 && (
+          <g opacity={clamp01(b)} transform={`translate(1640 560) scale(${1.45 * b})`}>
+            <circle cx={-330} cy={250} r={18} fill="#fbfbf8" stroke={INK} strokeWidth={6} />
+            <circle cx={-270} cy={190} r={28} fill="#fbfbf8" stroke={INK} strokeWidth={6} />
+            <path d={CLOUD} transform="translate(0 -10) scale(1.55 1.25)" fill="#fbfbf8" stroke={INK} strokeWidth={6} strokeLinejoin="round" />
+            <g transform="translate(0 20)"><Seesaw a={a} /></g>
           </g>
-        </g>
-        {/* the hand closes on the wallet on "keep" */}
-        <g transform={`translate(${lerp(1200, 870, eout(ramp(F, 296, 310)))} 1520)`}>
-          <path d="M 260,320 L 40,40" stroke={INK} strokeWidth={34} strokeLinecap="round" />
-          <g transform="rotate(-12)"><MiniWallet s={2.6} /></g>
-          <circle cx={30} cy={30} r={58} fill="#fbfbf8" stroke={INK} strokeWidth={10} />
-        </g>
-        <FoundTag f={F} at={-99} />
+        )}
       </g>
     );
   } },
-  // E · fact card: so scientists tested it
-  { from: 328, to: 386, z0: 1.0, z1: 1.04, render: (f) => {
-    const F = f + 328;
+  // G1 · wide: three chances drop in, one per door. Door 3 is a goat, so its chance hops onto door 2 → switching wins two times out of three.
+  // The signs above the doors flip to 1/3 and 2/3 on "two … three".
+  { from: 621, to: 720, z0: 1.0, z1: 1.05, fx: CX, fy: 880, render: (f) => {
+    const F = f + 621;
+    const drop = (t0: number) => 1010 - (1 - eout(ramp(F, t0, t0 + 14))) * 1150;
+    const bob = (k: number) => Math.sin(F * 0.12 + k) * 8;
+    const mv = eio(ramp(F, 652, 670));
+    const joined = F >= 670;
+    const orbit = (k: number) => joined ? 62 * Math.cos(F * 0.13 + k * Math.PI) : 0;
+    const g2 = 0.7 * eio(ramp(F, 668, 680));
+    const doors = doorsWith([
+      { lit: 0.7, sign: "1/3", signK: ramp(F, 684, 692) },
+      { lit: 1, glow: g2 * (0.85 + 0.15 * Math.sin(F * 0.3)), sign: "2/3", signK: ramp(F, 692, 700) },
+      { lit: 0.4, open: 1, dim: eio(ramp(F, 670, 684)) },
+    ]);
+    const x3 = lerp(DOOR_X[2], DOOR_X[1] + 62, mv), y3 = drop(632) - Math.sin(mv * Math.PI) * 300;
     return (
-      <Card label="A REAL EXPERIMENT · 2019">
-        <g opacity={eio(ramp(F, 336, 348))}><Figure x={540} y={1240} s={1.45} coat="#fff" labCoat glasses hair="tuft" mood="happy" look={[6, -4]} blink={blinkAt(F, 4)} armR={60} elbowR={50} holdR={<g transform="rotate(-20)"><rect x={-40} y={-56} width={80} height={104} rx={8} fill="#f2e6cf" stroke={INK} strokeWidth={5} /><path d="M -22,-24 h 44 M -22,0 h 44 M -22,24 h 30" stroke={INK} strokeWidth={4} /></g>} /></g>
-        <g transform={`translate(540 1470) scale(${pop(F, 354, 12)})`}>
-          <text textAnchor="middle" y={0} style={serif} fontSize={104} fill={PINK_OFF}>So scientists</text>
-          <text textAnchor="middle" y={112} style={serif} fontSize={104} fill={PINK_OFF}>tested it.</text>
-        </g>
-      </Card>
-    );
-  } },
-  // F · fact card: 17,000 wallets, 40 countries
-  { from: 386, to: 524, z0: 1.0, z1: 1.05, render: (f) => {
-    const F = f + 386;
-    const n = 17000 * eout(ramp(F, 412, 462));
-    const cells = Math.round(96 * eout(ramp(F, 412, 462)));
-    return (
-      <Card label="LOST ON PURPOSE">
-        <text x={VW / 2} y={560} textAnchor="middle" style={serif} fontSize={200} fill={PINK_OFF} opacity={eio(ramp(F, 400, 412))}>{fmt(n)}</text>
-        <text x={VW / 2} y={650} textAnchor="middle" fontFamily={CAPTION_FONT} fontWeight={800} fontSize={58} fill="#7a6a5e" opacity={eio(ramp(F, 458, 468))}>wallets</text>
-        <g transform="translate(150 730)">
-          {Array.from({ length: cells }, (_, i) => <g key={i} transform={`translate(${(i % 12) * 66} ${Math.floor(i / 12) * 54})`}><rect width={52} height={36} rx={7} fill="#8a5a3c" stroke={INK} strokeWidth={3} /><rect x={32} y={10} width={14} height={14} rx={3} fill="#6f4730" /></g>)}
-        </g>
-        <g transform="translate(540 1300)" opacity={eio(ramp(F, 484, 494))}>
-          <text textAnchor="middle" y={0} style={serif} fontSize={120} fill={PINK_OFF}>40 countries</text>
-          <g transform="translate(-330 60)">
-            {Array.from({ length: 40 }, (_, i) => { const k = pop(F, 488 + i * 0.5, 8); return <circle key={i} cx={(i % 10) * 73} cy={Math.floor(i / 10) * 64 + 20} r={22 * k} fill={i % 7 === 3 ? COAT : "#2A1E17"} opacity={0.85} />; })}
+      <g>
+        <Stage f={F} doors={doors} spotX={lerp(CX, DOOR_X[1], ramp(F, 668, 690))} extra={
+          <g>
+            <Orb x={DOOR_X[0]} y={drop(624) + bob(0)} r={44} k={F >= 624 ? 1 : 0} />
+            <Orb x={DOOR_X[1] + orbit(0)} y={drop(628) + bob(1) + (joined ? 16 * Math.sin(F * 0.13) : 0)} r={44} k={F >= 628 ? 1 : 0} />
+            <Orb x={joined ? DOOR_X[1] + orbit(1) : x3} y={joined ? 1010 + bob(2) - 16 * Math.sin(F * 0.13) : y3 + bob(2) * (1 - mv)} r={44} k={F >= 632 ? 1 : 0} />
           </g>
-        </g>
-      </Card>
-    );
-  } },
-  // G · fact card: more of the cash wallets came back
-  { from: 524, to: 636, z0: 1.0, z1: 1.04, render: (f) => {
-    const F = f + 524;
-    const b1 = eout(ramp(F, 530, 556)), b2 = eout(ramp(F, 578, 606));
-    const H = 760, base = 1460;
-    const bar = (x: number, v: number, pct: number, label: string, hi: boolean) => (
-      <g>
-        <rect x={x} y={base - H * pct * v} width={300} height={H * pct * v} rx={18} fill={hi ? COAT : "#d9cdbf"} stroke={INK} strokeWidth={6} />
-        <text x={x + 150} y={base - H * pct * v - 36} textAnchor="middle" style={serif} fontSize={hi ? 120 : 96} fill={PINK_OFF} opacity={v}>{Math.round(pct * 100 * v)}%</text>
-        <text x={x + 150} y={base + 76} textAnchor="middle" fontFamily={CAPTION_FONT} fontWeight={800} fontSize={50} fill={PINK_OFF}>{label}</text>
-      </g>
-    );
-    return (
-      <Card label="OWNER CONTACTED">
-        {bar(170, b1, 0.4, "No cash", false)}
-        {bar(610, b2, 0.51, "With cash", true)}
-        <line x1={120} y1={base} x2={960} y2={base} stroke={INK} strokeWidth={6} strokeLinecap="round" />
-        <text x={VW / 2} y={1720} textAnchor="middle" fontFamily={MONO} fontSize={26} fill="#7a6a5e" opacity={eio(ramp(F, 600, 615))}>Cohn et al., Science (2019) · 17,303 wallets · 40 countries</text>
-      </Card>
-    );
-  } },
-  // H · doorway: you give it back. More honest, not less
-  { from: 636, to: 728, z0: 1.0, z1: 1.07, fx: 600, fy: 1150, render: (f) => {
-    const F = f + 636;
-    const reach = eio(ramp(F, 644, 672));
-    const given = F > 676;
-    const heart = pop(F, 688, 12);
-    return (
-      <g>
-        <g transform="translate(0 70)"><Doorway f={F} /></g>
-        <Figure x={350} y={GROUND + 70} s={1.4} coat={COAT} mood={given ? "happy" : "neutral"} look={[10, 0]} blink={blinkAt(F, 5)} armR={lerp(10, 82, reach)} elbowR={lerp(0, 10, reach)} holdR={!given ? <MiniWallet s={0.9} /> : undefined} />
-        <Figure x={790} y={GROUND + 70} s={1.25} facing={-1} coat="#8a6fb3" scarf="#4f8fd6" hair="bun" mood={F > 680 ? "happy" : "surprised"} look={[8, 0]} blink={blinkAt(F, 6)} armR={given ? 70 : 10} elbowR={given ? 30 : 0} holdR={given ? <MiniWallet s={0.9} /> : undefined} />
-        {heart > 0.01 && <path transform={`translate(580 ${930 - (F - 688) * 1.2}) scale(${heart * 1.3})`} d="M 0,22 C -34,0 -22,-30 0,-12 C 22,-30 34,0 0,22 Z" fill="#ff7a8a" stroke={INK} strokeWidth={5} opacity={1 - ramp(F, 715, 728)} />}
+        } />
+        <You x={470} y={GROUND} s={1.3} mood={F > 672 ? "surprised" : "neutral"} look={F > 660 ? [14, -8] : [10, -4]} blink={blinkAt(F, 15)} />
+        <Host x={2090} y={GROUND} s={1.3} facing={-1} mood="happy" look={[12, -4]} blink={blinkAt(F, 16)} armL={keys(F, [[621, -10], [648, -10], [660, 92]])} elbowL={-10} armR={55} elbowR={85} micR={-12} />
       </g>
     );
   } },
-  // I · close-up under the lamp: so… would you give it back?
-  { from: 728, to: 900, z0: 1.0, z1: 1.08, fx: 540, fy: 1100, render: (f) => {
-    const F = f + 728;
-    const toCam = F > 756;
+  // G2 · medium: your first pick only had a one-in-three chance (one small orb in your hands)… and that never changed (shake it: it stays small)
+  { from: 720, to: 834, z0: 1.0, z1: 1.06, fx: 1700, fy: 760, render: (f) => {
+    const F = f + 720;
+    const doors = doorsWith([{ lit: 1, glow: 0.35, sign: "1/3", signK: 1 }, { lit: 1, glow: 0.6, sign: "2/3", signK: 1 }, { lit: 0.4, open: 1, dim: 1 }]);
+    const fly = eio(ramp(F, 722, 736));
+    const held = F >= 736;
+    const shake = F >= 812 && F < 832 ? Math.sin(F * 1.4) * 14 : 0;
+    const orbs2 = <g><Orb x={DOOR_X[1] - 40 + 40 * Math.cos(F * 0.13)} y={820 + 14 * Math.sin(F * 0.13)} r={26} /><Orb x={DOOR_X[1] - 40 - 40 * Math.cos(F * 0.13)} y={820 - 14 * Math.sin(F * 0.13)} r={26} /></g>;
     return (
       <g>
-        <g transform="translate(540 960) scale(1.7) translate(-560 -1000)"><Street f={F} blur={12} /></g>
-        <Figure x={540} y={2420} s={3.6} coat={COAT} mood={toCam ? "neutral" : "worried"} look={toCam ? [0, 2] : [-12, 8]} blink={blinkAt(F, 7)} armR={50} elbowR={70} holdR={<MiniWallet s={1.2} />} headTilt={toCam ? -4 : 0} />
+        <StageBG f={F} doors={doors} k={1.5} cx={1080} cy={800} spotX={940} blur={0} extra={orbs2} />
+        {!held && <Orb x={lerp(1070, 2080, fly)} y={lerp(1035, 860, fly) - Math.sin(fly * Math.PI) * 160} r={34} />}
+        <You x={2200} y={1640} s={2.8} facing={-1} mood={F > 826 ? "sad" : F > 760 ? "neutral" : "happy"} look={F > 812 ? [-6, 10] : [-10, 6]} blink={blinkAt(F, 17)}
+          armR={keys(F, [[720, 10], [728, 10], [736, 58]]) + shake * 0.5} elbowR={keys(F, [[720, 0], [736, -46]])}
+          armL={F > 826 ? keys(F, [[826, -10], [834, 40]]) : -10} elbowL={F > 826 ? -60 : 0}
+          holdR={held ? <g transform={`translate(${shake * 0.4} -34)`}><Orb x={0} y={0} r={26} /></g> : undefined} />
+      </g>
+    );
+  } },
+  // H · wide payoff: you switch to door 2 → the car. Confetti
+  { from: 834, to: 880, z0: 1.0, z1: 1.06, fx: CX, fy: 860, render: (f) => {
+    const F = f + 834;
+    const o = eout(ramp(F, 836, 850));
+    const up = F > 846;
+    const doors = doorsWith([{ lit: 0.5, sign: "1/3", signK: 1 }, { lit: 1, open: o, glow: 0.6 * ramp(F, 842, 852), sign: "2/3", signK: 1 }, { lit: 0.5, open: 1, dim: 1 }]);
+    return (
+      <g>
+        <Stage f={F} doors={doors} spotX={CX} />
+        <Glint x={1340} y={DOOR_BOT - 130} t={ramp(F, 848, 870)} r={60} />
+        <You x={470} y={GROUND} s={1.3} mood={up ? "happy" : "surprised"} look={[12, -8]} blink={blinkAt(F, 9)} armL={up ? 160 : -10} elbowL={up ? -20 : 0} armR={up ? 165 : 95} elbowR={up ? -15 : 0} bob={up ? 6 * Math.abs(Math.sin((F - 846) * 0.35)) : 0} />
+        <Host x={2090} y={GROUND} s={1.3} facing={-1} mood="happy" look={[10, -6]} blink={blinkAt(F, 11)} armL={up ? 150 : -10} elbowL={up ? -20 : 0} armR={55} elbowR={85} micR={-12} />
+        <Confetti t={F - 844} x={CX} y={760} />
+      </g>
+    );
+  } },
+  // I · close-up, you on the right third: so… would you switch? (no title: the question is in the voice and the subtitle)
+  { from: 880, to: FILM_FRAMES, z0: 1.0, z1: 1.06, fx: 1760, fy: 900, render: (f) => {
+    const F = f + 880;
+    const doors = doorsWith([{ lit: 0.6, sign: "1/3", signK: 1 }, { lit: 1, open: 1, glow: 0.4, sign: "2/3", signK: 1 }, { lit: 0.6, open: 1, dim: 1 }]);
+    return (
+      <g>
+        <StageBG f={F} doors={doors} k={1.7} cx={CX} cy={820} spotX={CX} blur={14} />
+        <ConfettiRain f={F} n={50} />
+        <You x={1760} y={2130} s={3.4} mood="neutral" look={F > 884 ? [0, 2] : [-10, -4]} headTilt={F > 884 ? -4 : 0} blink={blinkAt(F, 10)} />
       </g>
     );
   } },
 ];
 
-export const WalletFilm: React.FC = () => {
+export const DoorsFilm: React.FC = () => {
   const f = useCurrentFrame();
-  const onCard = f >= 328 && f < 636;
-  const endCard = eio(ramp(f, 786, 800));
-  const fade = Math.max(1 - ramp(f, 0, 8), ramp(f, 884, 899));
+  const fade = Math.max(1 - ramp(f, 0, 8), ramp(f, FILM_FRAMES - 16, FILM_FRAMES - 1));
   return (
     <AbsoluteFill style={{ backgroundColor: NAVY }}>
-      <Soundtrack total={FILM_FRAMES} voice={staticFile("projects/stick-wallet-story/narration.wav")} voiceEnd={VOICE_END} music="music_suspense" amb="amb_city_night" ambVol={0.6} sfx={SFX} />
+      <Soundtrack total={FILM_FRAMES} voice={staticFile("projects/stick-doors-16x9/narration.wav")} voiceEnd={VOICE_END} music="music_suspense" sfx={SFX} />
       <svg width={0} height={0} style={{ position: "absolute" }}>
         <defs>
-          <filter id="dof"><feGaussianBlur stdDeviation="9" /></filter>
-          <linearGradient id="cone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={WARM} stopOpacity="0.55" /><stop offset="1" stopColor={WARM} stopOpacity="0.06" /></linearGradient>
-          <radialGradient id="pool"><stop offset="0" stopColor={WARM} stopOpacity="0.45" /><stop offset="1" stopColor={WARM} stopOpacity="0" /></radialGradient>
-          <radialGradient id="pool2"><stop offset="0" stopColor={WARM} stopOpacity="0.5" /><stop offset="1" stopColor={WARM} stopOpacity="0" /></radialGradient>
-          <radialGradient id="bulb"><stop offset="0" stopColor="#fff4d0" stopOpacity="0.95" /><stop offset="1" stopColor={WARM} stopOpacity="0" /></radialGradient>
-          <linearGradient id="streak" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={WARM} stopOpacity="0.5" /><stop offset="1" stopColor={WARM} stopOpacity="0" /></linearGradient>
-          <radialGradient id="inside" cx="0.5" cy="0.35" r="0.8"><stop offset="0" stopColor="#fff2c8" stopOpacity="0.9" /><stop offset="1" stopColor="#e9a54f" stopOpacity="0.6" /></radialGradient>
-          <radialGradient id="vig" cx="0.5" cy="0.45" r="0.75"><stop offset="0.55" stopColor="#05070d" stopOpacity="0" /><stop offset="1" stopColor="#05070d" stopOpacity="0.55" /></radialGradient>
+          <filter id="dof"><feGaussianBlur stdDeviation="7" /></filter>
+          <filter id="dof2"><feGaussianBlur stdDeviation="11" /></filter>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="24" /></filter>
+          <clipPath id="floorClip"><rect x={0} y={DOOR_BOT} width={VW} height={VH - DOOR_BOT} /></clipPath>
+          <linearGradient id="room" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#ffe9b0" /><stop offset="1" stopColor="#e4a95a" /></linearGradient>
+          <linearGradient id="floorFade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={FLOOR} stopOpacity="0.15" /><stop offset="0.55" stopColor={FLOOR} stopOpacity="0.95" /><stop offset="1" stopColor={FLOOR} stopOpacity="1" /></linearGradient>
+          <linearGradient id="spotCone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={SPOT} stopOpacity="0.5" /><stop offset="1" stopColor={SPOT} stopOpacity="0.08" /></linearGradient>
+          <radialGradient id="spotPool"><stop offset="0" stopColor={SPOT} stopOpacity="0.45" /><stop offset="1" stopColor={SPOT} stopOpacity="0" /></radialGradient>
+          <radialGradient id="orbGlow"><stop offset="0" stopColor={BULB} stopOpacity="0.55" /><stop offset="1" stopColor={BULB} stopOpacity="0" /></radialGradient>
+          <radialGradient id="vig" cx="0.5" cy="0.5" r="0.75"><stop offset="0.55" stopColor="#05070d" stopOpacity="0" /><stop offset="1" stopColor="#05070d" stopOpacity="0.55" /></radialGradient>
         </defs>
       </svg>
       <Shots f={f} shots={SHOTS} />
-      {!onCard && <svg width={VW} height={VH} style={{ position: "absolute", inset: 0 }}><rect width={VW} height={VH} fill="url(#vig)" /></svg>}
-      <Captions f={f} words={WORDS} chunks={CHUNKS} hide={onCard || endCard > 0.5} />
-      {endCard > 0.01 && (
-        <AbsoluteFill style={{ background: `linear-gradient(180deg, rgba(10,12,20,${0.7 * endCard}) 0%, rgba(10,12,20,${0.25 * endCard}) 45%, rgba(10,12,20,0) 70%)`, alignItems: "center" }}>
-          <div style={{ ...serif, fontSize: 170, color: "#fbfbf8", opacity: endCard, transform: `translateY(${(1 - endCard) * 30}px)`, textShadow: "0 6px 30px rgba(0,0,0,0.5)", marginTop: 300 }}>Would you?</div>
-        </AbsoluteFill>
-      )}
+      <svg width={VW} height={VH} style={{ position: "absolute", inset: 0 }}><rect width={VW} height={VH} fill="url(#vig)" /></svg>
+      <Captions f={f} words={WORDS} chunks={CHUNKS} />
       <AbsoluteFill style={{ backgroundColor: "#000", opacity: fade }} />
     </AbsoluteFill>
   );

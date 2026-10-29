@@ -28,6 +28,15 @@ Make it once:
 | sfx_footsteps | Sneaker footsteps walking on a wet city pavement at night, six steps, then stop, 2 seconds |
 | sfx_counter | Fast mechanical number counter ticking up, rapid soft clicks speeding up then stopping with a small ding, 2 seconds |
 | sfx_card_slide | Paper card sliding onto a table, soft swish and tap, 0.7 seconds |
+| sfx_phone_buzz | A smartphone vibrating twice on a wet wooden bench, close, buzzing rattle (trim two bursts out of the drone) |
+| sfx_screen_tap | Soft finger taps and a quick swipe on a glass smartphone screen, close up, quiet |
+| sfx_notify | A short clean smartphone text message notification sound, two soft high tones |
+| sfx_shutter | A single smartphone camera shutter click, crisp (boost ~+22 dB, it comes back quiet) |
+| sfx_heartbeat | A deep slow human heartbeat, muffled and tense, four beats |
+| sfx_braam | A deep cinematic braam impact for a twist reveal, low brass and sub boom with a long dark tail |
+| sfx_car_door | A single car door shutting firmly, about 15 meters away on a rainy street at night |
+| sfx_thunder | Distant low rolling thunder (comes back ~1 s: pad + echo + low-pass to stretch it) |
+| sfx_data_scan | Short digital data scan sound, quick computer glitch blips and a soft beep |
 | sfx_coin | Single copper coin dropped on a wooden table, bright clink and short spin, 1 second |
 | sfx_cha_ching | Classic cash register cha-ching with coins, cheerful, 1.2 seconds |
 | sfx_heart_chime | Warm gentle two-note harp and bell chime, heartwarming moment, 1.5 seconds |
@@ -66,3 +75,9 @@ ffmpeg -i out.mp4 -af ebur128=framelog=quiet -f null - 2>&1 | grep " I:"      # 
 ffmpeg -ss <t> -t 1 -i out.mp4 -vn -af volumedetect -f null - 2>&1 | grep mean   # a voice second vs a music-only second
 ```
 Voice seconds should sit ~6–10 dB above music-only seconds after the voice ends, and the integrated loudness should be −16 ± 1 LUFS.
+
+
+## Thriller kit (added with The Lost Phone)
+- `music_thriller`: eleven_music_v2_5, "Instrumental only, 70 seconds. Dark cinematic thriller underscore: a low pulsing synth heartbeat at 80 BPM, sparse muted piano, a soft string drone, distant metallic textures; builds slowly, drops near silence around 0:40, swells to the end. No drums, no vocals." (~900 credits).
+- `amb_rain`: generated rain came back 2 s long, so it is built: the clip alternated forward and reversed with 0.5 s crossfades to 62 s, over a soft pink-noise floor (highpass 500, lowpass 7000).
+- 60 s YouTube stories mix to **−14 LUFS** (the level of the reference channel and YouTube's normalisation target).

@@ -38,14 +38,14 @@ Money and finance facts · law and "is this legal?" · psychology experiments an
 - **Part structure:** end on a binary choice ("A or B?"), make part 2 from the majority, open it with the result ("61% of you said…"). Pin part 1.
 - **Use a different keyword per choice** than the page's lead-magnet keyword, so DM automations don't clash.
 - **Recurring cast:** keep costume colours and hair details fixed across parts; reuse `Figure` props.
-- **Daily rhythm:** one premise → one 30 s film. The fixed kit means a new film is mostly new story, new sets and new cards.
+- **Daily rhythm:** one premise → one 30 s film. The fixed kit means a new film is mostly new story, new sets and new ways to act the fact out.
 
 ## 5. Fact rules
 1. Find the **primary source** (the paper, the law, the official dataset) before writing the line. Note author, year and the exact numbers.
 2. **Say what was measured.** If a study measured "contacted the owner", the film says "tried to give it back", not "returned the money".
 3. **Round honestly** ("17,303" → "seventeen thousand" is fine; "about 20,000" is not).
 4. If the story itself is fiction (a $100 bill), never imply the study used it.
-5. Put the citation on the fact card (small mono line) or at least in `BRIEF.md`.
+5. Put the citation in `BRIEF.md` (never on screen), and decide how the characters act the fact out (`visual-grammar.md` §6).
 6. No made-up statistics, view counts or income figures, ever.
 
 ## 6. Script checklist

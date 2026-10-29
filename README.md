@@ -1,8 +1,8 @@
 # stick-figure-shorts
 
-A Claude Code skill that makes **20–40 second stick-figure story videos** (9:16, for Reels, Shorts and TikTok). Claude writes the story, ElevenLabs voices it, and Claude draws every frame in code with [Remotion](https://www.remotion.dev): white round-head characters with stick limbs, moody one-light sets, clean fact cards, karaoke captions, music and sound effects. No AI image or video generator is involved.
+A Claude Code skill that makes **stick-figure story videos** (20–60 s, 16:9 for YouTube by default, 9:16 on request). Claude writes the story, ElevenLabs voices it, and Claude draws every frame in code with [Remotion](https://www.remotion.dev): white round-head characters with stick limbs on moody one-light sets, plus music and sound effects. Every idea is **acted out by the characters**, so there are no fact cards or typography, only plain subtitles. No AI image or video generator is involved.
 
-![The Wallet: one frame every 1.5 s](assets/preview/the_wallet_sheet.jpg)
+![Three Doors: one frame every 1.5 s](assets/preview/three_doors_sheet.jpg)
 
 ## Install
 ```bash
@@ -13,15 +13,16 @@ Then follow [SETUP.md](SETUP.md): Node 18+, ffmpeg, Python 3, an ElevenLabs conn
 ## Use
 Open Claude Code in an empty folder and say:
 
-> Use the stick-figure-shorts skill. Make a 30-second story: "You find a wallet with $100 in it. Nobody saw you." Add one real fact and end on a question.
+> Use the stick-figure-shorts skill. Make a 30-second 16:9 story for YouTube about the Monty Hall problem: "You're on a game show. Three doors." Act the odds out (no fact cards) and end on a question.
 
 ## What's inside
 | Path | What |
 |---|---|
-| `SKILL.md` | The recipe Claude follows: story → voice → word timings → shots in code → sound → render → QA |
+| `SKILL.md` | The recipe Claude follows: story → voice → word timings → shots in code → sound → render → QA, and the rules (animation first, plain subtitles) |
 | `SETUP.md` | Install and setup guide, licences |
-| `references/` | Story formulas and fact rules, the visual grammar, the full pipeline, sound design |
-| `assets/template/` | The Remotion kit (`kit.tsx`: stick figure, camera, captions, soundtrack) and a complete example film (`Film.tsx`) |
+| `references/` | Story formulas and fact rules, the visual grammar (how to act a fact out, two motion styles), the full pipeline, sound design |
+| `assets/template/` | "Three Doors" (16:9): the Remotion kit (`kit.tsx`: stick figure, camera, subtitles, soundtrack) and the complete film (`Film.tsx`) |
+| `assets/examples/lost-phone-16x9/` | "The Lost Phone", a 59 s thriller in two styles (frames-only and full animation) |
 | `scripts/` | Scaffold a film, ElevenLabs TTS with timings, whisper timings, cue generation, ambience beds, QA stills, render |
 
 ## Licences

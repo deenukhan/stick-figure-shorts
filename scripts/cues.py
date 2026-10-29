@@ -1,4 +1,4 @@
-"""Turn a word-timed transcript into the film's cue data: words.ts (karaoke words + caption chunks) and a printed cue table.
+"""Turn a word-timed transcript into the film's cue data: words.ts (timed words + subtitle chunks) and a printed cue table.
 
 usage: python3 cues.py <transcript.json> <out/words.ts> [--lead 15] [--fps 30] [--max 4]
 transcript.json is what the studio's transcribe.py writes: [{s, e, t, words:[{w, s, e}]}].
