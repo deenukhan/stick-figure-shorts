@@ -1,6 +1,6 @@
 ---
 name: stick-figure-shorts
-description: Makes original 20–40 second stick-figure story shorts (9:16 Reels, Shorts, TikTok) drawn entirely in code, with SVG and React in Remotion, voiced with ElevenLabs and timed word by word. The look is white round-head characters with ink outlines and stick limbs on moody one-light sets, plus clean fact cards and karaoke captions. Use whenever the user wants a stick-figure, stickman or "white head" cartoon story video, a faceless story or explainer short, a "you" second-person dilemma story, an animated fact story for a faceless YouTube or Instagram page, or asks to make "videos like this" from a stick-figure reference. Also use to plan a series for such a channel, or to fix the timing, captions or look of a film made with this skill.
+description: Makes original 20–40 second stick-figure story shorts (9:16 Reels, Shorts, TikTok, or 16:9 for a YouTube channel) drawn entirely in code, with SVG and React in Remotion, voiced with ElevenLabs and timed word by word. The look is white round-head characters with ink outlines and stick limbs on moody one-light sets, plus clean fact cards and karaoke captions. Use whenever the user wants a stick-figure, stickman or "white head" cartoon story video, a faceless story or explainer short, a "you" second-person dilemma story, an animated fact story for a faceless YouTube or Instagram page, or asks to make "videos like this" from a stick-figure reference. Also use to plan a series for such a channel, or to fix the timing, captions or look of a film made with this skill.
 ---
 
 # Stick-figure shorts
@@ -10,7 +10,7 @@ One skill, one pipeline: **story → voice → word timings → shots in code �
 Worked example: "The Wallet" (30 s, full sound design), whose source is in `assets/template/`. Copying it and changing the story is the fastest start. Four more films made with this skill (The Penny, Three Doors, The Marshmallow, The Wall From Space) show the range.
 
 ## 0. Before you start
-- **Ask for (or pick):** the premise, the niche, the language, and whether it ends on a question (engagement) or a twist (story). Default: English, 9:16, ~30 s, ending on a question.
+- **Ask for (or pick):** the premise, the niche, the language, and whether it ends on a question (engagement) or a twist (story). Default: English, 9:16, ~30 s, ending on a question. For a main YouTube channel (not Shorts), make it 16:9: see `references/visual-grammar.md` → "8. 16:9 (YouTube)".
 - **Originality:** the genre (round white heads, stick limbs, "you" stories) is free to use. A specific channel's characters, costumes, story, title, colours and on-screen furniture are not. Invent your own cast (one costume colour + one hair or hat detail each).
 - **Facts:** if the story uses a fact, find the primary source first and keep the numbers exact. See `references/story.md` → "Fact rules".
 
@@ -29,6 +29,7 @@ Worked example: "The Wallet" (30 s, full sound design), whose source is in `asse
 
 ## 2. Visual grammar (full spec: `references/visual-grammar.md`)
 - **Canvas:** 1080×1920, 30 fps. Captions sit at ~y 1360; keep the top 120 px and the bottom 300 px free of key action (platform UI).
+- **16:9 variant:** a 2560×1440 world rendered at `--scale=0.75` (1920×1080). Every prop keeps its size; the extra width goes to staging (the hero on the left third, the other character on the right, the set in the middle). Full recipe in `references/visual-grammar.md` §8; worked example in `assets/examples/three-doors-16x9/`.
 - **Characters** (`<Figure>` in `kit.tsx`): a white circle head (r 62) with a **7 px ink outline**, dot eyes, brows that carry the mood (`neutral · worried · sly · happy · surprised · sad`), a small mouth. Limbs are **single 9 px ink lines**, hands are white mittens, feet are chunky white sneakers. **One costume colour on the torso** identifies each character. Options: hair tuft or bun, glasses, scarf, lab coat, held prop.
 - **Palette:** dark desaturated sets (navy, slate, teal-grey) + **one warm light source** per scene + the hero's costume colour as the only saturated hue. Fact cards are flat paper with ink type and the hero colour as the single highlight.
 - **Camera:** hard cuts every **2.5–4 s** (8–10 shots in 30 s). Each shot gets **one slow eased push** (zoom 1.00 → 1.05–1.14 around a focus point) and nothing else. No shakes, whips or spins.
@@ -61,7 +62,7 @@ The mix lives in the composition: `<Soundtrack total voice voiceEnd music amb am
 bash scripts/stills.sh <engine> <slug> <out_dir> 60 150 240 310 370 470 600 700 850   # QA stills + sheet
 bash scripts/render.sh <engine> <slug> <out_dir>/<slug>_v1.mp4                         # finished film, mix → −16 LUFS
 ```
-`render.sh` renders the composition with its soundtrack, normalises the mix to −16 LUFS and writes a contact sheet next to the MP4.
+`render.sh` renders the composition with its soundtrack, normalises the mix to −16 LUFS and writes a contact sheet next to the MP4. For a 16:9 film add `--scale=0.75` at the end (any extra arguments go to `remotion render`).
 
 ## 7. QA checklist (do every item before showing anyone)
 **Story and facts**
@@ -87,7 +88,7 @@ bash scripts/render.sh <engine> <slug> <out_dir>/<slug>_v1.mp4                  
 - [ ] No SFX stacks (≤ 2 in any 10 frames); the signature sound is in a voice pause.
 
 **Files**
-- [ ] `out/<slug>_v1.mp4` is 1080×1920, 30 fps, H.264 + AAC, and the duration is right.
+- [ ] `out/<slug>_v1.mp4` is 1080×1920 (or 1920×1080 for 16:9), 30 fps, H.264 + AAC, and the duration is right.
 - [ ] `BRIEF.md` holds the story as sent, the voice and take, the music/ambience/SFX, the cue table and the fact check.
 - [ ] The contact sheet has been looked at frame by frame.
 
@@ -97,5 +98,6 @@ bash scripts/render.sh <engine> <slug> <out_dir>/<slug>_v1.mp4                  
 - `references/pipeline.md`: every command, both voice routes, file layout, troubleshooting.
 - `references/sound.md`: the sound library (prompts, trimming), mix levels, SFX placement, checking the mix.
 - `assets/template/`: `kit.tsx` (helpers, `Figure`, `Face`, `Shots`, `Captions`, `Glint`, `Grain`, `Soundtrack`), `Film.tsx` (The Wallet, the worked example), `words.ts`, `index.tsx`, `entry.tsx`.
+- `assets/examples/three-doors-16x9/`: a 16:9 film ("Three Doors", the Monty Hall problem): `Film.tsx`, `kit.tsx` (the 16:9 settings), `index.tsx`, `words.ts`.
 - `scripts/`: `new_film.sh`, `cues.py`, `tts.py`, `transcribe.py`, `make_ambience.sh`, `stills.sh`, `render.sh`.
 - `SETUP.md`: the install and setup guide for someone receiving this skill.

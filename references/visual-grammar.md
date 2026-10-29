@@ -65,3 +65,14 @@ Change the expression **on the word** that motivates it ("keep" → sly), never 
 - Chunks: 2–4 words, broken at punctuation or pauses over 0.35 s (`cues.py --max 4`).
 - One optional stakes tag top left (a white pill, 32 px mono). Keep it out of the top 120 px.
 - The title card at the end: Fraunces 800, ~170 px, white, over a top-down dark gradient; keep it clear of faces.
+
+## 8. 16:9 (YouTube)
+For a main YouTube channel, build the same film on a wide canvas. Nothing about the look changes; only the staging does.
+- **Canvas:** in `kit.tsx` set `VW = 2560, VH = 1440` (world units), and in `index.tsx` make the composition 2560×1440. Render with `bash scripts/render.sh <engine> <slug> <out.mp4> --scale=0.75` for 1920×1080. At this world size, every prop, figure scale and stroke width from the 9:16 numbers above still fits.
+- **Captions:** `top 1290, left/right 360, 84 px` (one line of 2–4 words in the lower band).
+- **Ground and set:** the floor line at y ≈ 1160, the figures' ground at y ≈ 1380 (s 1.3 in wide shots), door or window tops around y 480. Spread repeating set pieces across the full width (wall lines, valance, bulbs).
+- **Staging:** the hero on the left third (x ≈ 470), the second character on the right (x ≈ 2090) facing left, the set or object in the middle. Medium shots: one figure at s 2.8 on one side, the blurred set behind. Two-shot close-ups: both figures at s 3.2, about 900 apart.
+- **Fact cards:** split them left and right (the claim on the left, the picture or number on the right). Scale the card content by ~1.12 about the centre, a 44 px mono label at y 190, the source line around y 1320.
+- **End title:** on the left over a left-to-right dark gradient, two lines at ~230 px; the hero close-up on the right third.
+- **Captions vs props:** in the lower band (y 1290–1390) keep key props above it. Push in around a low focus point (`fy` ≈ 1250) when the object stands on the floor.
+- **Platform:** no Shorts UI to dodge, but YouTube's progress bar and title overlay cover the top and bottom ~6% on hover.
